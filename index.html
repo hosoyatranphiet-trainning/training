@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Thi Trắc Nghiệm Bảo An - Phiên Bản Cao Cấp</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #1e3c72;
+            --secondary-color: #2a5298;
+            --accent-color: #20c997;
+            --dark-bg: #0f172a;
+        }
+        body { 
+            background: radial-gradient(circle, #f0f4f8 0%, #d9e2ec 100%);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+        }
+        
+        /* KHUNG ĐĂNG NHẬP */
+        .login-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; flex-direction: column; }
+        .login-card { width: 100%; max-width: 450px; background: #ffffff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); border: none; overflow: hidden; }
+        .login-header { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; padding: 30px 20px; text-align: center; }
+        .admin-toggle-link { color: var(--secondary-color); text-decoration: none; font-weight: 600; cursor: pointer; margin-top: 15px; font-size: 0.9rem; transition: all 0.2s; }
+        .admin-toggle-link:hover { text-decoration: underline; color: var(--primary-color); }
+
+        /* GIAO DIỆN LÀM BÀI */
+        .quiz-container { max-width: 850px; margin: 40px auto; }
+        .quiz-card { background: #ffffff; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.06); border: none; overflow: hidden; }
+        .quiz-header { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; padding: 20px 30px; }
+        .question-slide { padding: 30px; min-height: 320px; }
+        .question-title { font-size: 1.25rem; font-weight: 700; color: #2d3748; line-height: 1.5; border-left: 5px solid var(--secondary-color); padding-left: 15px; margin-bottom: 8px; }
+        .lang-jp { font-size: 0.95rem; color: #718096; font-style: italic; display: block; margin-bottom: 25px; padding-left: 20px; }
+        .option-box { display: flex; align-items: center; padding: 14px 20px; margin-bottom: 12px; background: #f7fafc; border: 2px solid #edf2f7; border-radius: 10px; cursor: pointer; transition: all 0.2s ease; }
+        .option-box:hover { background: #edf2f7; border-color: #cbd5e0; }
+        .option-input:checked + .option-box { background: #ebf8ff; border-color: #3182ce; }
+        .option-prefix { font-weight: 800; color: var(--secondary-color); background: #e2e8f0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin-right: 15px; flex-shrink: 0; }
+        .option-input:checked + .option-box .option-prefix { background: #3182ce; color: white; }
+        .option-text { font-size: 1rem; color: #2d3748; font-weight: 500; }
+        .option-text .jp-text { display: block; font-size: 0.85rem; color: #718096; font-style: italic; margin-top: 2px; }
+        .option-input { display: none; }
+        .nav-dots { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 15px 30px; background: #f7fafc; border-top: 1px solid #edf2f7; border-bottom: 1px solid #edf2f7; }
+        .dot { width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: #edf2f7; color: #4a5568; font-weight: 700; font-size: 0.9rem; cursor: pointer; border: 1px solid #cbd5e0; }
+        .dot.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .dot.answered { background: var(--accent-color); color: white; border-color: var(--accent-color); }
+
+        /* KẾT QUẢ */
+        .result-card { max-width: 600px; margin: 50px auto; background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: none; overflow: hidden; }
+        
+        /* PANEL ADMIN */
+        .admin-container { max-width: 1200px; margin: 40px auto; background: white; padding: 35px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
+        .dashboard-card { background: #f8fafc; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; text-align: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        .dashboard-card h2 { font-weight: 800; font-size: 2.2rem; color: var(--primary-color); margin-top: 5px; margin-bottom: 0; }
+        .dashboard-card p { font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: #64748b; margin: 0; letter-spacing: 0.5px; }
+        
+        #loginArea, #adminLoginArea { display: none; }
+        #quizArea, #resultArea, #adminArea { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div id="loginArea" style="display: flex;">
+        <div class="login-wrapper w-100">
+            <div class="login-card">
+                <div class="login-header">
+                    <i class="fa-solid fa-user-pen mb-3" style="font-size: 3rem;"></i>
+                    <h3 class="fw-bold mb-1">XÁC THỰC NHÂN VIÊN</h3>
+                    <p class="mb-0 text-white-50 fs-6">Vui lòng nhập mã số nhân viên để làm bài thi</p>
+                </div>
+                <div class="p-4">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-secondary">Mã Số Nhân Viên (ID)</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-id-card"></i></span>
+                            <input type="text" id="employeeIdInput" class="form-control text-center fw-bold" placeholder="Ví dụ: 12603">
+                        </div>
+                    </div>
+                    <div class="d-grid">
+                        <button id="btnVerify" class="btn btn-primary btn-lg fw-bold" style="background: var(--primary-color); border: none;">
+                            <i class="fa-solid fa-right-to-bracket me-2"></i> VÀO LÀM BÀI THI
+                        </button>
+                    </div>
+                    <div id="loginError" class="text-danger text-center mt-3 fw-bold small" style="display: none;"></div>
+                </div>
+            </div>
+            <a class="admin-toggle-link" onclick="switchLoginGateway('admin')"><i class="fa-solid fa-lock me-1"></i> Cổng Đăng Nhập Ban Quản Lý / Admin</a>
+        </div>
+    </div>
+
+    <div id="adminLoginArea">
+        <div class="login-wrapper w-100">
+            <div class="login-card border border-primary">
+                <div class="login-header bg-dark" style="background: #1e293b !important;">
+                    <i class="fa-solid fa-user-shield text-warning mb-3" style="font-size: 3rem;"></i>
+                    <h3 class="fw-bold mb-1 text-warning">HỆ THỐNG QUẢN TRỊ</h3>
+                    <p class="mb-0 text-white-50 fs-6">Đăng nhập tài khoản Admin cấp cao</p>
+                </div>
+                <div class="p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-secondary">Email Admin</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-envelope"></i></span>
+                            <input type="email" id="adminEmailInput" class="form-control" placeholder="admin@nhamay.com">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-secondary">Mật Khẩu (Password)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-key text-warning"></i></span>
+                            <input type="password" id="adminPasswordInput" class="form-control" placeholder="••••••••">
+                        </div>
+                    </div>
+                    <div class="d-grid">
+                        <button id="btnAdminVerify" class="btn btn-dark btn-lg fw-bold" style="background: #1e293b; border: none;">
+                            <i class="fa-solid fa-unlock-keyhole me-2 text-warning"></i> ĐĂNG NHẬP HỆ THỐNG
+                        </button>
+                    </div>
+                    <div id="adminLoginError" class="text-danger text-center mt-3 fw-bold small" style="display: none;"></div>
+                </div>
+            </div>
+            <a class="admin-toggle-link" onclick="switchLoginGateway('employee')"><i class="fa-solid fa-arrow-left me-1"></i> Quay lại cổng thi của Nhân viên</a>
+        </div>
+    </div>
+
+    <div id="quizArea">
+        <div class="quiz-container">
+            <div id="recoveryAlert" class="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center small fw-bold" style="display: none !important; border-radius: 8px;">
+                <i class="fa-solid fa-triangle-exclamation me-2 animate__animated animate__flash animate__infinite text-danger"></i> 
+                Hệ thống đã tự động khôi phục phiên thi trước đó của bạn do sự cố ngắt kết nối!
+            </div>
+
+            <div class="quiz-card">
+                <div class="quiz-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1 fw-bold" id="examTitle">ĐỀ THI TRẮC NGHIỆM</h5>
+                        <small id="empDisplayInfo"><i class="fa-solid fa-user me-1"></i> Nhân viên: --</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-light text-dark py-2 px-3 fw-bold fs-6" id="progressBadge">Câu 1/30</span>
+                    </div>
+                </div>
+                <div class="nav-dots" id="navDotsContainer"></div>
+                <div class="question-slide" id="questionContent"></div>
+                <div class="card-footer bg-white p-4 d-flex justify-content-between align-items-center border-top">
+                    <button id="btnPrev" class="btn btn-outline-secondary btn-lg px-4 fw-bold">
+                        <i class="fa-solid fa-arrow-left me-2"></i> CÂU TRƯỚC
+                    </button>
+                    <button id="btnTriggerSubmit" class="btn btn-danger btn-lg px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
+                        <i class="fa-solid fa-paper-plane me-2"></i> NỘP BÀI THI
+                    </button>
+                    <button id="btnNext" class="btn btn-primary btn-lg px-4 fw-bold" style="background: var(--secondary-color); border: none;">
+                        CÂU SAU <i class="fa-solid fa-arrow-right ms-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="resultArea">
+        <div class="result-card">
+            <div class="p-5 text-center">
+                <div id="resultIcon" class="mb-3"></div>
+                <h3 class="fw-bold text-dark" id="resultStatus">KẾT QUẢ BÀI THI</h3>
+                <h1 class="display-3 fw-bold text-primary my-3" id="scoreDisplay">0/30</h1>
+                
+                <div class="bg-light p-3 rounded-3 text-start mb-4">
+                    <p class="mb-2"><strong>Mã nhân viên:</strong> <span id="resEmpId" class="fw-bold">--</span></p>
+                    <p class="mb-2"><strong>Họ và tên:</strong> <span id="resEmpName" class="fw-bold">--</span></p>
+                    <p class="mb-2"><strong>Thời gian nộp:</strong> <span id="resTime">--</span></p>
+                    <p class="mb-0"><strong>Trạng thái:</strong> <span id="resStatusBadge" class="fw-bold">--</span></p>
+                </div>
+                <div class="alert alert-info text-start small mb-4">
+                    <i class="fa-solid fa-circle-info me-1"></i> Kết quả đã được ghi nhận tự động lên hệ thống dữ liệu tổng. Bạn có thể đóng trình duyệt.
+                </div>
+                <div class="d-grid col-8 mx-auto">
+                    <button class="btn btn-outline-secondary" onclick="window.location.reload()">
+                        <i class="fa-solid fa-rotate-right me-2"></i> Kết thúc phiên thi
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="adminArea">
+        <div class="admin-container">
+            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+                <div>
+                    <h3 class="fw-bold text-primary mb-1"><i class="fa-solid fa-chart-line me-2"></i>TRUNG TÂM PHÂN TÍCH & QUẢN TRỊ</h3>
+                    <p class="text-muted mb-0">Hệ thống phân tích dữ liệu kiểm tra an toàn thời gian thực</p>
+                </div>
+                <div>
+                    <button id="btnExportAllExcel" class="btn btn-success btn-lg fw-bold me-2">
+                        <i class="fa-solid fa-file-excel me-2"></i> XUẤT FILE EXCEL TỔNG HỢP
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="logoutAdmin()"><i class="fa-solid fa-power-off"></i> Đăng xuất</button>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="dashboard-card border-start border-primary border-4">
+                        <p>Tổng lượt tham gia</p>
+                        <h2 id="dashTotal">0</h2>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dashboard-card border-start border-success border-4">
+                        <p>Số nhân viên ĐẠT</p>
+                        <h2 class="text-success" id="dashPassed">0</h2>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dashboard-card border-start border-danger border-4">
+                        <p>Số nhân viên TRƯỢT</p>
+                        <h2 class="text-danger" id="dashFailed">0</h2>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dashboard-card border-start border-warning border-4">
+                        <p>Tỷ lệ Đạt nhà máy</p>
+                        <h2 class="text-warning" id="dashPercent">0%</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-5">
+                <div class="col-md-5">
+                    <div class="card p-4 h-100 border-0 bg-light">
+                        <h6 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-pie-chart me-1"></i> Tỷ Lệ Đạt Toàn Diện</h6>
+                        <div class="progress my-3" style="height: 35px; border-radius: 8px;">
+                            <div id="progressChartPassed" class="progress-bar bg-success fw-bold" role="progressbar" style="width: 0%">Đạt</div>
+                            <div id="progressChartFailed" class="progress-bar bg-danger fw-bold" role="progressbar" style="width: 0%">Trượt</div>
+                        </div>
+                        <small class="text-muted text-center mt-2">Mức điểm yêu cầu: Đạt tối thiểu 24/30 câu (80%)</small>
+                    </div>
+                </div>
+                <div class="col-md-7">
+                    <div class="card p-4 h-100 border-0 bg-light">
+                        <h6 class="fw-bold text-danger mb-2"><i class="fa-solid fa-triangle-exclamation me-1"></i> Cảnh Báo Lỗ Hổng Kiến Thức (Làm Sai Nhiều)</h6>
+                        <small class="text-muted d-block mb-3">Tự động thống kê các mã câu hỏi nhân viên bị nhầm lẫn nhiều nhất</small>
+                        <div id="weakPointContainer" class="small"></div>
+                    </div>
+                </div>
+            </div>
+
+            <h5 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-list-check me-2"></i>Danh Sách Kết Quả Chi Tiết</h5>
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="table table-bordered table-striped align-middle text-center mb-0">
+                    <thead class="table-dark sticky-top">
+                        <tr>
+                            <th>Mã Nhân Viên</th>
+                            <th>Họ và Tên</th>
+                            <th>Điểm Số</th>
+                            <th>Trạng Thái</th>
+                            <th>Thời Gian Nộp</th>
+                            <th>Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminTableBody">
+                        <tr>
+                            <td colspan="6" class="text-muted py-4">Đang truy xuất dữ liệu từ đám mây Firestore...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="modal fade" id="confirmSubmitModal" tabindex="-1" aria-labelledby="confirmSubmitModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 14px;">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold" id="confirmSubmitModalLabel"><i class="fa-solid fa-triangle-exclamation me-2 animate__animated animate__flash animate__infinite"></i>XÁC NHẬN NỘP BÀI THI</h5>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <i class="fa-solid fa-clipboard-question text-danger mb-3" style="font-size: 4.5rem;"></i>
+                <h5 class="fw-bold text-dark mb-3">Bạn chắc chắn muốn nộp bài?</h5>
+                
+                <div id="submitStatistics" class="alert alert-warning text-start py-2 px-3 small fw-bold mb-4" style="border-radius: 8px;">
+                     Chưa có số liệu.
+                </div>
+
+                <div class="form-check text-start bg-light p-3 border rounded-3 mb-3">
+                    <input class="form-check-input ms-0 me-2" type="checkbox" id="checkFinalConfirm" onchange="toggleFinalSubmitBtn()">
+                    <label class="form-check-label fw-bold text-secondary small" for="checkFinalConfirm" style="user-select: none; cursor: pointer;">
+                        Tôi xác nhận muốn nộp bài và kết thúc phần thi tại đây.
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-0 d-flex justify-content-between p-3">
+                <button type="button" class="btn btn-secondary px-3 fw-bold" data-bs-dismiss="modal">LÀM TIẾP</button>
+                <button type="button" id="btnSubmitExam" class="btn btn-danger px-4 fw-bold" disabled>NỘP BÀI THI</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // ========================================================
+    // CẤU HÌNH THÔNG TIN FIREBASE
+    // ========================================================
+    const firebaseConfig = {
+  apiKey: "AIzaSyBNNtc-NLwIGrUjDHANQMVBQh6CMtG6Au0",
+  authDomain: "tokuteigino-trainning.firebaseapp.com",
+  databaseURL: "https://tokuteigino-trainning-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "tokuteigino-trainning",
+  storageBucket: "tokuteigino-trainning.firebasestorage.app",
+  messagingSenderId: "715965585296",
+  appId: "1:715965585296:web:bd2f4d80b8fec2731e0515",
+  measurementId: "G-Y462HEGLP7"
+};
+
+    // Khởi tạo Firebase và các Dịch vụ
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    // Khai báo biến hệ thống
+    let currentEmployee = null;
+    let loadedQuestions = [];
+    let currentQuestionIndex = 0;
+    let userAnswers = {};
+    let allResultsData = []; 
+
+    const loginArea = document.getElementById('loginArea');
+    const adminLoginArea = document.getElementById('adminLoginArea');
+    const quizArea = document.getElementById('quizArea');
+    const resultArea = document.getElementById('resultArea');
+    const adminArea = document.getElementById('adminArea');
+
+    // Chuyển đổi giữa cổng Nhân viên và cổng Admin
+    window.switchLoginGateway = function(target) {
+        if(target === 'admin') {
+            loginArea.style.display = 'none';
+            adminLoginArea.style.display = 'flex';
+        } else {
+            adminLoginArea.style.display = 'none';
+            loginArea.style.display = 'flex';
+        }
+    };
+
+    // ========================================================
+    // XỬ LÝ ĐĂNG NHẬP CỔNG NHÂN VIÊN & KIỂM TRA PHIÊN (RECOVERY / RETEST)
+    // ========================================================
+    document.getElementById('btnVerify').addEventListener('click', async () => {
+        const empIdInput = document.getElementById('employeeIdInput').value.trim();
+        const loginError = document.getElementById('loginError');
+        
+        if (!empIdInput) {
+            loginError.innerText = "Vui lòng nhập Mã số nhân viên!";
+            loginError.style.display = 'block';
+            return;
+        }
+
+        loginError.style.display = 'none';
+        document.getElementById('btnVerify').disabled = true;
+        document.getElementById('btnVerify').innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Đang kiểm tra...`;
+
+        try {
+            // Bước 1: Quét xem nhân viên có tồn tại trong danh sách 'valid_employees' không
+            const empDoc = await db.collection('valid_employees').doc(empIdInput).get();
+            if (!empDoc.exists) {
+                loginError.innerText = `❌ Mã số nhân viên [${empIdInput}] không tồn tại trên hệ thống!`;
+                loginError.style.display = 'block';
+                resetEmployeeBtn();
+                return;
+            }
+
+            currentEmployee = empDoc.data();
+            currentEmployee.id = empIdInput;
+
+            // Bước 2: Kiểm tra phiên thi dang dở (Chống sập nguồn/F5/Gian lận)
+            const sessionDoc = await db.collection('active_sessions').doc(empIdInput).get();
+            if (sessionDoc.exists) {
+                const sessionData = sessionDoc.data();
+                userAnswers = sessionData.userAnswers || {};
+                
+                // Khởi động giao diện thi phục hồi
+                document.getElementById('recoveryAlert').style.setProperty('display', 'flex', 'important');
+                initQuizScreen();
+                return;
+            }
+
+            // Bước 3: Nếu không có phiên thi dang dở, kiểm tra lịch sử thi đạt cũ
+            const checkExam = await db.collection('exam_results')
+                                      .where('employeeId', '==', empIdInput)
+                                      .orderBy('submittedAt', 'desc')
+                                      .limit(1)
+                                      .get();
+                                      
+            if (!checkExam.empty) {
+                const lastExam = checkExam.docs[0].data();
+                
+                // Xem Admin có mở khóa thi lại mới hơn thời điểm thi lần cuối không
+                const checkUnlock = await db.collection('allow_retest')
+                                            .where('employeeId', '==', empIdInput)
+                                            .orderBy('unlockedAt', 'desc')
+                                            .limit(1)
+                                            .get();
+                
+                let isAllowed = false;
+                if (!checkUnlock.empty) {
+                    const unlockData = checkUnlock.docs[0].data();
+                    
+                    // Convert chuỗi thời gian sang định dạng Date để so sánh
+                    const lastSubmitDate = parseDateString(lastExam.submittedAt);
+                    const unlockDate = parseDateString(unlockData.unlockedAt);
+                    
+                    if (unlockDate > lastSubmitDate) {
+                        isAllowed = true; // Hợp lệ làm bài mới
+                    }
+                }
+
+                if (!isAllowed) {
+                    loginError.innerText = `⚠️ Từ chối: Bạn đã hoàn thành bài thi này. Hãy liên hệ Quản lý (Admin) để mở khóa nếu cần thi lại!`;
+                    loginError.style.display = 'block';
+                    resetEmployeeBtn();
+                    return;
+                }
+            }
+
+            // Bước 4: Tạo phiên thi mới hoàn toàn (Đánh dấu trạng thái "Đang thi" lên Cloud)
+            await db.collection('active_sessions').doc(empIdInput).set({
+                employeeId: currentEmployee.id,
+                employeeName: currentEmployee.name || "N/A",
+                startedAt: new Date().toLocaleString('vi-VN'),
+                userAnswers: {}
+            });
+
+            initQuizScreen();
+
+        } catch (error) {
+            loginError.innerText = `Lỗi hệ thống: ${error.message}`;
+            loginError.style.display = 'block';
+            resetEmployeeBtn();
+        }
+    });
+
+    function resetEmployeeBtn() {
+        document.getElementById('btnVerify').disabled = false;
+        document.getElementById('btnVerify').innerHTML = `<i class="fa-solid fa-right-to-bracket me-2"></i> VÀO LÀM BÀI THI`;
+    }
+
+    async function initQuizScreen() {
+        const empName = currentEmployee.name || "Nhân viên";
+        document.getElementById('empDisplayInfo').innerHTML = `<i class="fa-solid fa-user me-1"></i> Nhân viên: <strong>${empName}</strong> | Mã số: <strong>${currentEmployee.id}</strong>`;
+        
+        loginArea.style.display = 'none';
+        quizArea.style.display = 'block';
+        await loadQuestions();
+    }
+
+    // Tiện ích convert chuỗi "dd/mm/yyyy, hh:mm:ss" thành Object Date để so sánh
+    function parseDateString(str) {
+        if (!str) return new Date(0);
+        const parts = str.split(', ');
+        const dateParts = parts[0].split('/');
+        const timeParts = parts[1] ? parts[1].split(':') : [0,0,0];
+        return new Date(dateParts[2], dateParts[1] - 1, dateParts[0], timeParts[0], timeParts[1], timeParts[2]);
+    }
+
+    // ========================================================
+    // ĐỀ THI & ĐIỀU HƯỚNG SLIDE
+    // ========================================================
+    async function loadQuestions() {
+        try {
+            const snapshot = await db.collection('questions').get();
+            if (snapshot.empty) {
+                document.getElementById('questionContent').innerHTML = `<div class="alert alert-danger text-center">Chưa có câu hỏi trên Cloud.</div>`;
+                return;
+            }
+            loadedQuestions = [];
+            snapshot.forEach(doc => loadedQuestions.push(doc.data()));
+            loadedQuestions.sort((a, b) => a.id - b.id);
+
+            renderNavDots();
+            showQuestion(0);
+        } catch (error) {
+            document.getElementById('questionContent').innerHTML = `<div class="alert alert-danger">Lỗi: ${error.message}</div>`;
+        }
+    }
+
+    function renderNavDots() {
+        const dotsContainer = document.getElementById('navDotsContainer');
+        dotsContainer.innerHTML = '';
+        loadedQuestions.forEach((q, index) => {
+            const dot = document.createElement('div');
+            dot.className = 'dot';
+            if (userAnswers[q.id] !== undefined) dot.classList.add('answered');
+            dot.id = `dot-${index}`;
+            dot.innerText = index + 1;
+            dot.addEventListener('click', () => { saveCurrentAnswer(); showQuestion(index); });
+            dotsContainer.appendChild(dot);
+        });
+    }
+
+    function showQuestion(index) {
+        currentQuestionIndex = index;
+        const q = loadedQuestions[index];
+        const container = document.getElementById('questionContent');
+
+        document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
+        const activeDot = document.getElementById(`dot-${index}`);
+        if (activeDot) activeDot.classList.add('active');
+
+        document.getElementById('progressBadge').innerText = `Câu ${index + 1}/${loadedQuestions.length}`;
+        const prefixes = ['A', 'B', 'C', 'D'];
+
+        let optionsHtml = q.options.map((opt, optIdx) => {
+            const isChecked = userAnswers[q.id] === optIdx ? 'checked' : '';
+            return `
+                <label class="w-100 mb-2">
+                    <input type="radio" class="option-input" name="quiz_option" value="${optIdx}" ${isChecked} onchange="selectOption(${q.id}, ${optIdx})">
+                    <div class="option-box">
+                        <div class="option-prefix">${prefixes[optIdx]}</div>
+                        <div class="option-text">
+                            <strong>${opt.vn}</strong>
+                            <span class="jp-text">${opt.jp}</span>
+                        </div>
+                    </div>
+                </label>
+            `;
+        }).join('');
+
+        container.innerHTML = `
+            <div class="question-title">Câu ${index + 1}: ${q.question_vn}</div>
+            <span class="lang-jp"><i class="fa-solid fa-language me-1"></i> ${q.question_jp}</span>
+            <div class="mt-3">${optionsHtml}</div>
+        `;
+
+        document.getElementById('btnPrev').style.visibility = index === 0 ? 'hidden' : 'visible';
+        document.getElementById('btnNext').style.visibility = index === loadedQuestions.length - 1 ? 'hidden' : 'visible';
+        
+        // Thống kê động số lượng câu chưa làm cho Popup Modal nộp bài
+        updateSubmitStatistics();
+    }
+
+    // Lưu đáp án thời gian thực lên Cloud (Chống mất điện/F5)
+    window.selectOption = async function(qId, optIdx) {
+        userAnswers[qId] = optIdx;
+        const dot = document.getElementById(`dot-${currentQuestionIndex}`);
+        if (dot) dot.classList.add('answered');
+        
+        // Cập nhật ngầm lên Cloud Firebase phiên active_sessions
+        if (currentEmployee) {
+            db.collection('active_sessions').doc(currentEmployee.id).update({
+                userAnswers: userAnswers
+            }).catch(err => console.log("Lỗi tự động lưu:", err));
+        }
+    };
+
+    function saveCurrentAnswer() {
+        const checkedInput = document.querySelector('input[name="quiz_option"]:checked');
+        if (checkedInput) {
+            const q = loadedQuestions[currentQuestionIndex];
+            userAnswers[q.id] = parseInt(checkedInput.value);
+            const dot = document.getElementById(`dot-${currentQuestionIndex}`);
+            if (dot) dot.classList.add('answered');
+        }
+    }
+
+    document.getElementById('btnNext').addEventListener('click', () => { saveCurrentAnswer(); if (currentQuestionIndex < loadedQuestions.length - 1) showQuestion(currentQuestionIndex + 1); });
+    document.getElementById('btnPrev').addEventListener('click', () => { saveCurrentAnswer(); if (currentQuestionIndex > 0) showQuestion(currentQuestionIndex - 1); });
+
+    // ==========================================
+    // XỬ LÝ MODAL NỘP BÀI 2 BƯỚC (NHÂN VIÊN)
+    // ==========================================
+    function updateSubmitStatistics() {
+        const totalQs = loadedQuestions.length;
+        const answeredCount = Object.keys(userAnswers).length;
+        const remaining = totalQs - answeredCount;
+        
+        const statDiv = document.getElementById('submitStatistics');
+        if (remaining > 0) {
+            statDiv.className = "alert alert-warning text-start py-2 px-3 small fw-bold mb-4";
+            statDiv.innerHTML = `<i class="fa-solid fa-circle-exclamation me-2 text-danger"></i> Bạn đã làm <strong>${answeredCount}/${totalQs}</strong> câu. Vẫn còn <strong>${remaining}</strong> câu chưa hoàn thành!`;
+        } else {
+            statDiv.className = "alert alert-success text-start py-2 px-3 small fw-bold mb-4";
+            statDiv.innerHTML = `<i class="fa-solid fa-circle-check me-2 text-success"></i> Tuyệt vời! Bạn đã hoàn thành toàn bộ <strong>${totalQs}/${totalQs}</strong> câu hỏi.`;
+        }
+    }
+
+    // Toggle nút nộp bài khi check xác nhận
+    window.toggleFinalSubmitBtn = function() {
+        const isChecked = document.getElementById('checkFinalConfirm').checked;
+        document.getElementById('btnSubmitExam').disabled = !isChecked;
+    };
+
+    // ==========================================
+    // CHẤM ĐIỂM & NỘP BÀI THI CHÍNH THỨC
+    // ==========================================
+    document.getElementById('btnSubmitExam').addEventListener('click', async () => {
+        saveCurrentAnswer();
+        
+        // Ẩn modal xác nhận
+        const confirmModalEl = document.getElementById('confirmSubmitModal');
+        const modalInstance = bootstrap.Modal.getInstance(confirmModalEl);
+        if (modalInstance) modalInstance.hide();
+
+        document.getElementById('btnTriggerSubmit').disabled = true;
+        document.getElementById('btnTriggerSubmit').innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Đang nộp...`;
+
+        let score = 0;
+        let wrongAnswersList = [];
+        const totalQs = loadedQuestions.length;
+
+        loadedQuestions.forEach(q => { 
+            if (userAnswers[q.id] === q.correct) {
+                score++; 
+            } else {
+                wrongAnswersList.push(q.id);
+            }
+        });
+
+        const isPassed = score >= 24;
+        const examDate = new Date();
+
+        const examResultData = {
+            employeeId: currentEmployee.id,
+            employeeName: currentEmployee.name || "N/A",
+            score: score,
+            totalQuestions: totalQs,
+            isPassed: isPassed,
+            submittedAt: examDate.toLocaleString('vi-VN'),
+            wrongAnswersList: wrongAnswersList
+        };
+
+        try {
+            // 1. Lưu kết quả chính thức vào Firestore
+            await db.collection('exam_results').add(examResultData);
+
+            // 2. Xóa phiên thi dang dở active_session (Giải phóng trạng thái "Đang thi")
+            await db.collection('active_sessions').doc(currentEmployee.id).delete();
+
+            // Hiển thị kết quả lên màn hình
+            document.getElementById('scoreDisplay').innerText = `${score}/${totalQs}`;
+            document.getElementById('resEmpId').innerText = examResultData.employeeId;
+            document.getElementById('resEmpName').innerText = examResultData.employeeName;
+            document.getElementById('resTime').innerText = examResultData.submittedAt;
+
+            const resultIcon = document.getElementById('resultIcon');
+            const resultStatus = document.getElementById('resultStatus');
+            const resStatusBadge = document.getElementById('resStatusBadge');
+
+            if (isPassed) {
+                resultIcon.innerHTML = `<i class="fa-solid fa-circle-check text-success" style="font-size: 5.5rem;"></i>`;
+                resultStatus.innerText = "CHÚC MỪNG BẠN ĐÃ ĐẠT!";
+                resultStatus.className = "fw-bold mb-3 text-success";
+                resStatusBadge.innerHTML = `<span class="badge bg-success fs-6">ĐẠT (PASSED)</span>`;
+            } else {
+                resultIcon.innerHTML = `<i class="fa-solid fa-circle-xmark text-danger" style="font-size: 5.5rem;"></i>`;
+                resultStatus.innerText = "RẤT TIẾC, BẠN CHƯA ĐẠT!";
+                resultStatus.className = "fw-bold mb-3 text-danger";
+                resStatusBadge.innerHTML = `<span class="badge bg-danger fs-6">CHƯA ĐẠT (FAILED)</span>`;
+            }
+
+            quizArea.style.display = 'none';
+            resultArea.style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (error) {
+            alert("Lỗi lưu kết quả bài thi: " + error.message);
+            document.getElementById('btnTriggerSubmit').disabled = false;
+            document.getElementById('btnTriggerSubmit').innerHTML = `<i class="fa-solid fa-paper-plane me-2"></i> NỘP BÀI THI`;
+        }
+    });
+
+    // ========================================================
+    // ĐĂNG NHẬP ADMIN BẰNG FIREBASE AUTH
+    // ========================================================
+    document.getElementById('btnAdminVerify').addEventListener('click', async () => {
+        const emailInput = document.getElementById('adminEmailInput').value.trim();
+        const passwordInput = document.getElementById('adminPasswordInput').value.trim();
+        const adminLoginError = document.getElementById('adminLoginError');
+
+        if (!emailInput || !passwordInput) {
+            adminLoginError.innerText = "❌ Vui lòng điền đầy đủ Email và Mật khẩu Admin!";
+            adminLoginError.style.display = 'block';
+            return;
+        }
+
+        document.getElementById('btnAdminVerify').disabled = true;
+        document.getElementById('btnAdminVerify').innerHTML = `<span class="spinner-border spinner-border-sm me-2 text-warning"></span> Đang xác thực...`;
+
+        try {
+            await auth.signInWithEmailAndPassword(emailInput, passwordInput);
+            adminLoginError.style.display = 'none';
+            adminLoginArea.style.display = 'none';
+            adminArea.style.display = 'block';
+            await generateAdminDashboard();
+        } catch (error) {
+            adminLoginError.innerText = "❌ Tài khoản hoặc mật khẩu Admin không hợp lệ!";
+            adminLoginError.style.display = 'block';
+        } finally {
+            document.getElementById('btnAdminVerify').disabled = false;
+            document.getElementById('btnAdminVerify').innerHTML = `<i class="fa-solid fa-unlock-keyhole me-2 text-warning"></i> ĐĂNG NHẬP HỆ THỐNG`;
+        }
+    });
+
+    window.logoutAdmin = async function() {
+        await auth.signOut();
+        window.location.reload();
+    }
+
+    // ========================================================
+    // BẢNG QUẢN TRỊ ADMIN (CẬP NHẬT NÚT MỞ KHÓA THI LẠI)
+    // ========================================================
+    async function generateAdminDashboard() {
+        const tableBody = document.getElementById('adminTableBody');
+        try {
+            const snapshot = await db.collection('exam_results').get();
+            if (snapshot.empty) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-muted py-4">Chưa có dữ liệu bài kiểm tra nào được ghi nhận.</td></tr>`;
+                return;
+            }
+
+            allResultsData = [];
+            let total = 0, passed = 0, failed = 0;
+            let htmlRows = '';
+            let wrongQuestionsCounter = {};
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                allResultsData.push(data);
+                total++;
+
+                if (data.isPassed) passed++; else failed++;
+
+                if (data.wrongAnswersList && Array.isArray(data.wrongAnswersList)) {
+                    data.wrongAnswersList.forEach(qId => {
+                        wrongQuestionsCounter[qId] = (wrongQuestionsCounter[qId] || 0) + 1;
+                    });
+                }
+
+                const badge = data.isPassed ? `<span class="badge bg-success">ĐẠT</span>` : `<span class="badge bg-danger">CHƯA ĐẠT</span>`;
+                
+                // Tích hợp nút "Mở khóa thi lại" thay thế nút Xóa hẳn dữ liệu cũ
+                htmlRows += `
+                    <tr>
+                        <td class="fw-bold text-secondary">${data.employeeId}</td>
+                        <td class="text-start ps-3">${data.employeeName}</td>
+                        <td class="fw-bold text-primary">${data.score}/${data.totalQuestions || 30}</td>
+                        <td>${badge}</td>
+                        <td class="small text-muted">${data.submittedAt}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning fw-bold text-dark" onclick="unlockRetest('${data.employeeId}', '${data.employeeName}')">
+                                <i class="fa-solid fa-unlock me-1"></i> Mở khóa thi lại
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tableBody.innerHTML = htmlRows;
+
+            const percentPassed = total > 0 ? Math.round((passed / total) * 100) : 0;
+            const percentFailed = total > 0 ? (100 - percentPassed) : 0;
+
+            document.getElementById('dashTotal').innerText = total;
+            document.getElementById('dashPassed').innerText = passed;
+            document.getElementById('dashFailed').innerText = failed;
+            document.getElementById('dashPercent').innerText = `${percentPassed}%`;
+
+            const chartPassed = document.getElementById('progressChartPassed');
+            const chartFailed = document.getElementById('progressChartFailed');
+            chartPassed.style.width = `${percentPassed}%`;
+            chartPassed.innerText = percentPassed > 0 ? `Đạt: ${percentPassed}%` : '';
+            chartFailed.style.width = `${percentFailed}%`;
+            chartFailed.innerText = percentFailed > 0 ? `Trượt: ${percentFailed}%` : '';
+
+            const weakContainer = document.getElementById('weakPointContainer');
+            let sortedWeakQuestions = Object.keys(wrongQuestionsCounter).sort((a, b) => wrongQuestionsCounter[b] - wrongQuestionsCounter[a]);
+
+            if (sortedWeakQuestions.length === 0) {
+                weakContainer.innerHTML = `<div class="text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i> Chưa phát hiện lỗ hổng lớn. Nhân viên làm bài rất đồng đều!</div>`;
+            } else {
+                let weakHtml = '<ul class="list-group border-0">';
+                sortedWeakQuestions.slice(0, 3).forEach(qId => {
+                    weakHtml += `
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0 py-1 bg-transparent">
+                            <span><i class="fa-solid fa-triangle-exclamation text-warning me-2"></i> <strong>Câu số ${qId}</strong> trong ngân hàng đề thi</span>
+                            <span class="badge bg-danger rounded-pill">Có ${wrongQuestionsCounter[qId]} lượt làm sai</span>
+                        </li>
+                    `;
+                });
+                weakHtml += '</ul>';
+                weakContainer.innerHTML = weakHtml;
+            }
+
+        } catch (error) {
+            tableBody.innerHTML = `<tr><td colspan="6" class="text-danger py-4">Lỗi đồng bộ Dashboard: ${error.message}</td></tr>`;
+        }
+    }
+
+    // ==========================================
+    // LOGIC KÍCH HOẠT MỞ KHÓA THI LẠI (ADMIN)
+    // ==========================================
+    window.unlockRetest = async function(empId, empName) {
+        const confirmMsg = `Bạn có chắc chắn muốn mở khóa thi lại cho Nhân viên:\n- Họ và tên: ${empName}\n- Mã số ID: ${empId}?\n\n(Dữ liệu điểm thi cũ vẫn được lưu trữ bảo toàn trên Firestore).`;
+        if (!confirm(confirmMsg)) return;
+
+        try {
+            const nowStr = new Date().toLocaleString('vi-VN');
+            
+            // 1. Tạo bản ghi mở khóa
+            await db.collection('allow_retest').add({
+                employeeId: empId,
+                unlockedAt: nowStr,
+                unlockedBy: auth.currentUser ? auth.currentUser.email : "Admin"
+            });
+
+            // 2. Bảo hiểm: Xóa luôn phiên thi bị treo của người đó nếu có
+            await db.collection('active_sessions').doc(empId).delete();
+
+            alert(`✅ Đã mở khóa thành công! Nhân viên [${empId}] hiện tại đã có thể vào trang và tiến hành làm bài thi mới.`);
+            await generateAdminDashboard();
+        } catch (error) {
+            alert(`Lỗi khi mở khóa thi lại: ${error.message}`);
+        }
+    };
+
+    // ==========================================
+    // XUẤT FILE EXCEL
+    // ==========================================
+    document.getElementById('btnExportAllExcel').addEventListener('click', () => {
+        if (allResultsData.length === 0) {
+            alert("Không có dữ liệu kết quả nào để kết xuất file Excel!");
+            return;
+        }
+
+        const excelData = allResultsData.map(item => ({
+            "MÃ SỐ NHÂN VIÊN": item.employeeId,
+            "HỌ VÀ TÊN": item.employeeName,
+            "ĐIỂM SỐ": `${item.score}/${item.totalQuestions || 30}`,
+            "SỐ CÂU ĐÚNG": item.score,
+            "TRẠNG THÁI": item.isPassed ? "ĐẠT (PASSED)" : "CHƯA ĐẠT (FAILED)",
+            "THỜI GIAN NỘP BÀI": item.submittedAt
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(excelData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Báo Cáo Toàn Nhà Máy");
+
+        ws['!cols'] = [{wch: 18}, {wch: 25}, {wch: 12}, {wch: 15}, {wch: 20}, {wch: 25}];
+
+        const currentDate = new Date().toISOString().slice(0,10);
+        XLSX.writeFile(wb, `Bao_Cao_Ket_Qua_An_Toan_Tong_Hop_${currentDate}.xlsx`);
+    });
+
+    // 🔒 BẢO MẬT: CHẶN F12 VÀ CHUỘT PHẢI
+    document.addEventListener('contextmenu', event => event.preventDefault());
+    document.addEventListener('keydown', event => {
+        if (event.keyCode === 123) {
+            event.preventDefault();
+            return false;
+        }
+        if (event.ctrlKey && (event.shiftKey && (event.keyCode === 73 || event.keyCode === 74 || event.keyCode === 67) || event.keyCode === 85)) {
+            event.preventDefault();
+            return false;
+        }
+    });
+</script>
+</body>
+</html>
