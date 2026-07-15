@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ Thống Thi Trắc Nghiệm - Song Ngữ Việt-Nhật (Nâng Cấp)</title>
-    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- FontAwesome Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Thư viện xuất Excel (SheetJS) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     
     <style>
@@ -88,12 +85,68 @@
         #loginArea, #adminLoginArea { display: none; }
         #quizArea, #resultArea, #adminArea { display: none; }
         
-        /* Responsive chỉnh chu */
-        @media (max-width: 768px) {
-            .quiz-container { margin: 15px auto; padding: 10px; }
-            .question-slide { padding: 15px; }
-            .option-box { padding: 10px 15px; }
-            .admin-container { padding: 15px; }
+        /* Responsive tối ưu hóa trên mọi thiết bị */
+        @media (max-width: 992px) {
+            /* Dành cho iPad và Tablet */
+            .quiz-container { margin: 25px auto; padding: 15px; }
+            .card-footer {
+                padding: 15px !important;
+            }
+            .card-footer .btn {
+                font-size: 0.95rem !important;
+                padding: 10px 15px !important;
+            }
+            .card-footer .sub-lang, 
+            .card-footer .sub-lang-dark {
+                font-size: 0.65rem !important;
+            }
+        }
+
+        @media (max-width: 576px) {
+            /* Dành cho Điện thoại di động */
+            .quiz-container { 
+                margin: 10px auto; 
+                padding: 5px; 
+            }
+            .question-slide { 
+                padding: 20px 15px; 
+                min-height: 280px;
+            }
+            .option-box { 
+                padding: 12px 15px; 
+            }
+            .admin-container { 
+                padding: 15px; 
+            }
+
+            /* Tối ưu hóa nút điều hướng trên Mobile thành dạng Grid cân đối */
+            .card-footer {
+                display: grid !important;
+                grid-template-columns: 1fr 1.2fr 1fr;
+                gap: 8px;
+                padding: 12px 10px !important;
+            }
+            .card-footer .btn {
+                width: 100% !important;
+                padding: 12px 5px !important;
+                font-size: 0.8rem !important;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                border-radius: 10px;
+                line-height: 1.2;
+            }
+            /* Ẩn bớt phụ đề tiếng Nhật trên Mobile để tránh bị tràn chữ */
+            .card-footer .btn .sub-lang,
+            .card-footer .btn .sub-lang-dark {
+                display: none !important; 
+            }
+            /* Đẩy icon lên phía trên của chữ chính */
+            .card-footer .btn i {
+                margin: 0 0 4px 0 !important;
+                font-size: 1.1rem;
+            }
         }
     </style>
 </head>
@@ -101,7 +154,6 @@
 
 <div class="container">
     
-    <!-- ================= SCENE 1A: CỔNG ĐĂNG NHẬP NHÂN VIÊN ================= -->
     <div id="loginArea" style="display: flex;">
         <div class="login-wrapper w-100">
             <div class="login-card">
@@ -139,7 +191,6 @@
         </div>
     </div>
 
-    <!-- ================= SCENE 1B: CỔNG ĐĂNG NHẬP ADMIN ================= -->
     <div id="adminLoginArea">
         <div class="login-wrapper w-100">
             <div class="login-card border border-primary">
@@ -187,10 +238,8 @@
         </div>
     </div>
 
-    <!-- ================= SCENE 2: GIAO DIỆN LÀM BÀI SLIDE ================= -->
     <div id="quizArea">
         <div class="quiz-container">
-            <!-- Cảnh báo trạng thái Auto-Save khôi phục sự cố -->
             <div id="recoveryAlert" class="alert alert-warning py-2 px-3 mb-3 d-flex flex-column small fw-bold" style="display: none !important; border-radius: 8px;">
                 <div>
                     <i class="fa-solid fa-triangle-exclamation me-2 animate__animated animate__flash animate__infinite text-danger"></i> 
@@ -219,15 +268,18 @@
                 <div class="question-slide" id="questionContent"></div>
                 <div class="card-footer bg-white p-4 d-flex justify-content-between align-items-center border-top">
                     <button id="btnPrev" class="btn btn-outline-secondary btn-lg px-4 fw-bold">
-                        <i class="fa-solid fa-arrow-left me-2"></i> CÂU TRƯỚC
+                        <i class="fa-solid fa-arrow-left me-md-2"></i>
+                        <span>CÂU TRƯỚC</span>
                         <span class="sub-lang-dark" style="font-size: 0.7rem;">前の問題</span>
                     </button>
                     <button id="btnTriggerSubmit" class="btn btn-danger btn-lg px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
-                        <i class="fa-solid fa-paper-plane me-2"></i> NỘP BÀI THI
-                        <span class="sub-lang" style="font-size: 0.7rem;">解答を提出する</span>
+                        <i class="fa-solid fa-paper-plane me-md-2"></i>
+                        <span>NỘP BÀI</span>
+                        <span class="sub-lang" style="font-size: 0.7rem;">解答を提出</span>
                     </button>
                     <button id="btnNext" class="btn btn-primary btn-lg px-4 fw-bold" style="background: var(--secondary-color); border: none;">
-                        CÂU SAU <i class="fa-solid fa-arrow-right ms-2"></i>
+                        <span>CÂU SAU</span>
+                        <i class="fa-solid fa-arrow-right ms-md-2"></i>
                         <span class="sub-lang" style="font-size: 0.7rem;">次の問題</span>
                     </button>
                 </div>
@@ -235,7 +287,6 @@
         </div>
     </div>
 
-    <!-- ================= SCENE 3: KẾT QUẢ BÀI THI ================= -->
     <div id="resultArea">
         <div class="result-card">
             <div class="p-5 text-center">
@@ -264,7 +315,6 @@
         </div>
     </div>
 
-    <!-- ================= SCENE 4: PANEL ADMIN ================= -->
     <div id="adminArea">
         <div class="admin-container">
             <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom flex-wrap gap-3">
@@ -272,7 +322,7 @@
                     <h3 class="fw-bold text-primary mb-1"><i class="fa-solid fa-chart-line me-2"></i>TRUNG TÂM PHÂN TÍCH & QUẢN TRỊ</h3>
                     <span class="sub-lang-dark fw-bold" style="font-size: 0.9rem;">分析・管理センター</span>
                     <p class="text-muted mb-0 mt-1">Hệ thống phân tích dữ liệu kiểm tra an toàn thời gian thực</p>
-                    <span class="sub-lang-dark">リアルタイム試験データ分析システム</span>
+                    <span class="sub-lang-dark">リアルタイム労働安全試験データ分析システム</span>
                 </div>
                 <div class="d-flex gap-2 flex-wrap">
                     <button id="btnExportAllExcel" class="btn btn-success fw-bold">
@@ -286,7 +336,6 @@
                 </div>
             </div>
 
-            <!-- DASHBOARD KPI CARDS -->
             <div class="row g-3 mb-4">
                 <div class="col-md-3 col-sm-6">
                     <div class="dashboard-card border-start border-primary border-4">
@@ -318,7 +367,6 @@
                 </div>
             </div>
 
-            <!-- BIỂU ĐỒ & CẢNH BÁO LỖ HỔNG -->
             <div class="row g-4 mb-5">
                 <div class="col-md-5">
                     <div class="card p-4 h-100 border-0 bg-light">
@@ -342,7 +390,6 @@
                 </div>
             </div>
 
-            <!-- BẢNG KẾT QUẢ CHI TIẾT + NÚT MỞ KHÓA -->
             <h5 class="fw-bold text-secondary mb-1"><i class="fa-solid fa-list-check me-2"></i>Danh Sách Kết Quả Chi Tiết</h5>
             <span class="sub-lang-dark fw-bold mb-3" style="font-size: 0.8rem;">詳細結果リスト</span>
             <div class="table-responsive mb-4" style="max-height: 400px; overflow-y: auto;">
@@ -365,7 +412,6 @@
                 </table>
             </div>
 
-            <!-- VÙNG CHI TIẾT CÁC CÂU LÀM SAI CỦA NHÂN VIÊN ĐƯỢC CHỌN -->
             <div id="wrongDetailSection" class="card border-0 bg-light p-4" style="display: none;">
                 <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
                     <div>
@@ -382,7 +428,6 @@
 
 </div>
 
-<!-- ================= MODAL XÁC NHẬN NỘP BÀI 2 BƯỚC ================= -->
 <div class="modal fade" id="confirmSubmitModal" tabindex="-1" aria-labelledby="confirmSubmitModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 14px;">
@@ -395,12 +440,10 @@
                 <h5 class="fw-bold text-dark mb-1">Bạn chắc chắn muốn nộp bài?</h5>
                 <span class="sub-lang-dark fw-bold mb-3 d-block">本当に解答を提出しますか？</span>
                 
-                <!-- Thống kê câu chưa làm -->
                 <div id="submitStatistics" class="alert alert-warning text-start py-2 px-3 small fw-bold mb-4" style="border-radius: 8px;">
                      Chưa có số liệu.
                 </div>
 
-                <!-- Lớp bảo vệ 2: Checkbox xác nhận cưỡng bức -->
                 <div class="form-check text-start bg-light p-3 border rounded-3 mb-3">
                     <input class="form-check-input ms-0 me-2" type="checkbox" id="checkFinalConfirm" onchange="toggleFinalSubmitBtn()">
                     <label class="form-check-label fw-bold text-secondary small" for="checkFinalConfirm" style="user-select: none; cursor: pointer;">
@@ -423,11 +466,9 @@
     </div>
 </div>
 
-<!-- Firebase SDK Compat -->
 <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
-<!-- Bootstrap JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
