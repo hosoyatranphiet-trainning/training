@@ -562,40 +562,41 @@
                                       .limit(1)
                                       .get();
                                       
-            if (!checkExam.empty) {
-                const lastExam = checkExam.docs[0].data();
-                
-                // Quét xem có lệnh "mở khóa thi lại" mới hơn lần nộp bài này không
-                const checkUnlock = await db.collection('allow_retest')
-                                            .where('employeeId', '==', empIdInput)
-                                            .orderBy('unlockedAt', 'desc')
-                                            .limit(1)
-                                            .get();
-                
-                let isAllowed = false;
-                if (!checkUnlock.empty) {
-                    const unlockData = checkUnlock.docs[0].data();
-                    const lastSubmitDate = parseDateString(lastExam.submittedAt);
-                    const unlockDate = parseDateString(unlockData.unlockedAt);
-                    
-                    if (unlockDate > lastSubmitDate) {
-                        isAllowed = true; // Cho phép làm lượt mới
-                    }
-                }
+           if (!checkExam.empty) {
+    const lastExam = checkExam.docs[0].data();
+    
+    const checkUnlock = await db.collection('allow_retest')
+                                .where('employeeId', '==', empIdInput)
+                                .orderBy('unlockedAt', 'desc')
+                                .limit(1)
+                                .get();
+    
+    let isAllowed = false;
+    if (!checkUnlock.empty) {
+        const unlockData = checkUnlock.docs[0].data();
+        
+        // Đổi Firebase Timestamp hoặc chuỗi cũ sang đối tượng Date an toàn
+        const lastSubmitDate = lastExam.submittedAt?.toDate ? lastExam.submittedAt.toDate() : new Date(lastExam.submittedAt);
+        const unlockDate = unlockData.unlockedAt?.toDate ? unlockData.unlockedAt.toDate() : new Date(unlockData.unlockedAt);
+        
+        if (unlockDate > lastSubmitDate) {
+            isAllowed = true; 
+        }
+    }
 
-                if (!isAllowed) {
-                    loginError.innerHTML = `⚠️ Từ chối: Bạn đã hoàn thành bài thi này. Hãy liên hệ Admin để mở khóa thi lại!<br><span class='sub-lang-dark text-danger'>⚠️ 拒否されました: この試験は既に完了しています。再試験が必要な場合は、管理者にロック解除を依頼してください。</span>`;
-                    loginError.style.display = 'block';
-                    resetEmployeeBtn();
-                    return;
-                }
-            }
+    if (!isAllowed) {
+        loginError.innerHTML = `⚠️ Từ chối: Bạn đã hoàn thành bài thi này. Hãy liên hệ Admin để mở khóa thi lại!<br><span class='sub-lang-dark text-danger'>⚠️ 拒否されました: この試験は既に完了しています。再試験が必要な場合は、管理者にロック解除を依頼してください。</span>`;
+        loginError.style.display = 'block';
+        resetEmployeeBtn();
+        return;
+    }
+}
 
             // 4. Khởi tạo phiên thi mới hoàn toàn
             await db.collection('active_sessions').doc(empIdInput).set({
                 employeeId: currentEmployee.id,
                 employeeName: currentEmployee.name || "N/A",
-                startedAt: new Date().toLocaleString('vi-VN'),
+                startedAt: new Date(),
                 userAnswers: {}
             });
 
@@ -829,7 +830,7 @@
             score: score,
             totalQuestions: totalQs,
             isPassed: isPassed,
-            submittedAt: new Date().toLocaleString('vi-VN'),
+            submittedAt: new Date(),
             wrongAnswersList: wrongAnswersList // Lưu mảng chi tiết câu sai lên Cloud
         };
 
@@ -1126,7 +1127,7 @@
             // 1. Ghi bản ghi mở khóa lên 'allow_retest'
             await db.collection('allow_retest').add({
                 employeeId: empId,
-                unlockedAt: nowStr,
+                unlockedAt: new Date(),
                 unlockedBy: auth.currentUser ? auth.currentUser.email : "Admin"
             });
 
