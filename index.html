@@ -262,8 +262,8 @@
                 <div>
                     <h3 class="fw-bold text-primary mb-1"><i class="fa-solid fa-chart-line me-2"></i>TRUNG TÂM PHÂN TÍCH & QUẢN TRỊ</h3>
                     <span class="sub-lang-dark fw-bold" style="font-size: 0.9rem;">分析・管理センター</span>
-                    <p class="text-muted mb-0 mt-1">Hệ thống phân tích dữ liệu kiểm tra thời gian thực</p>
-                    <span class="sub-lang-dark">リアルタイム試験データ分析システム</span>
+                    <p class="text-muted mb-0 mt-1">Hệ thống phân tích dữ liệu kiểm tra an toàn thời gian thực</p>
+                    <span class="sub-lang-dark">リアルタイム労働安全試験データ分析システム</span>
                 </div>
                 <div class="d-flex gap-2 flex-wrap">
                     <button id="btnExportAllExcel" class="btn btn-success fw-bold">
@@ -496,35 +496,17 @@
                 return;
             }
 
-            // 3. Kiểm tra lịch sử nộp bài cũ trong exam_results
+            // 3. KIỂM TRA QUYỀN THI (Chặn thi trùng nếu không được cấp phép)
             const checkExam = await db.collection('exam_results')
                                       .where('employeeId', '==', empIdInput)
-                                      .orderBy('submittedAt', 'desc')
                                       .limit(1)
                                       .get();
                                       
             if (!checkExam.empty) {
-                const lastExam = checkExam.docs[0].data();
+                // Nếu đã từng thi, bắt buộc phải tồn tại document cho phép thi trong 'allow_retest'
+                const retestDoc = await db.collection('allow_retest').doc(empIdInput).get();
                 
-                // Quét xem có lệnh "mở khóa thi lại" mới hơn lần nộp bài này không
-                const checkUnlock = await db.collection('allow_retest')
-                                            .where('employeeId', '==', empIdInput)
-                                            .orderBy('unlockedAt', 'desc')
-                                            .limit(1)
-                                            .get();
-                
-                let isAllowed = false;
-                if (!checkUnlock.empty) {
-                    const unlockData = checkUnlock.docs[0].data();
-                    const lastSubmitDate = parseDateString(lastExam.submittedAt);
-                    const unlockDate = parseDateString(unlockData.unlockedAt);
-                    
-                    if (unlockDate > lastSubmitDate) {
-                        isAllowed = true; // Cho phép làm lượt mới
-                    }
-                }
-
-                if (!isAllowed) {
+                if (!retestDoc.exists) {
                     loginError.innerHTML = `⚠️ Từ chối: Bạn đã hoàn thành bài thi này. Hãy liên hệ Admin để mở khóa thi lại!<br><span class='sub-lang-dark text-danger'>⚠️ 拒否されました: この試験は既に完了しています。再試験が必要な場合は、管理者にロック解除を依頼してください。</span>`;
                     loginError.style.display = 'block';
                     resetEmployeeBtn();
@@ -745,7 +727,7 @@
             statDiv.className = "alert alert-danger text-start py-2 px-3 small fw-bold mb-4";
             statDiv.innerHTML = `
                 <div><i class="fa-solid fa-circle-exclamation me-2 text-danger animate__animated animate__flash animate__infinite"></i> Bạn chưa làm xong! Còn <strong>${remaining}</strong> câu chưa hoàn thành!</div>
-                <div class="sub-lang-dark text-danger-emphasis mt-1">未回答がまだ <strong>${remaining}</strong> 問あります。提出する前にすべての問題を回答してください。</div>
+                <div class="sub-lang-dark text-danger-emphasis mt-1">未回答がまだ <strong>${remaining}</strong> 問あります。提出する trước khi tất cả các câu hỏi được hoàn thành.</div>
             `;
         } else {
             statDiv.className = "alert alert-success text-start py-2 px-3 small fw-bold mb-4";
@@ -825,6 +807,9 @@
 
             // 2. Giải phóng phiên active_sessions
             await db.collection('active_sessions').doc(currentEmployee.id).delete();
+
+            // 3. THU HỒI QUYỀN THI LẠI (Khóa lại ngay lập tức sau khi nộp bài)
+            await db.collection('allow_retest').doc(currentEmployee.id).delete();
 
             // Hiển thị giao diện kết quả
             document.getElementById('scoreDisplay').innerText = `${score}/${totalQs}`;
@@ -909,8 +894,7 @@
             const unlockSnapshot = await db.collection('allow_retest').get();
             activeUnlocksList = [];
             unlockSnapshot.forEach(doc => {
-                const uData = doc.data();
-                activeUnlocksList.push(uData.employeeId);
+                activeUnlocksList.push(doc.id); // Lấy trực tiếp ID document (mã nhân viên)
             });
 
             // Bước B: Quét toàn bộ kết quả exam_results
@@ -925,9 +909,6 @@
             let htmlRows = '';
             let wrongQuestionsGlobalCounter = {};
 
-            // Nhóm kết quả theo từng nhân viên để tìm ra lượt thi mới nhất của họ
-            let empLastExamMap = {};
-
             snapshot.forEach(doc => {
                 const data = doc.data();
                 allResultsData.push(data);
@@ -938,17 +919,9 @@
                 // Thống kê toàn cục các câu sai
                 if (data.wrongAnswersList && Array.isArray(data.wrongAnswersList)) {
                     data.wrongAnswersList.forEach(wItem => {
-                        // Hỗ trợ cả mảng ID lẫn Object nâng cấp
                         const qId = (typeof wItem === 'object') ? wItem.id : wItem;
                         wrongQuestionsGlobalCounter[qId] = (wrongQuestionsGlobalCounter[qId] || 0) + 1;
                     });
-                }
-
-                // Cập nhật lượt thi mới nhất của nhân viên để quản lý nút mở khóa thông minh
-                const empId = data.employeeId;
-                const submitTime = parseDateString(data.submittedAt);
-                if (!empLastExamMap[empId] || submitTime > parseDateString(empLastExamMap[empId].submittedAt)) {
-                    empLastExamMap[empId] = data;
                 }
             });
 
@@ -957,17 +930,13 @@
 
             allResultsData.forEach((data, index) => {
                 const badge = data.isPassed ? `<span class="badge bg-success">ĐẠT (合格)</span>` : `<span class="badge bg-danger">CHƯA ĐẠT (不合格)</span>`;
-                
-                // Giải mã thời gian nộp bài an toàn để hiển thị trên bảng quản lý
                 const formattedSubmitTime = parseDateString(data.submittedAt).toLocaleString('vi-VN');
                 
-                // KIỂM TRA TRẠNG THÁI NÚT MỞ KHÓA:
-                // Nếu ID nhân viên nằm trong danh sách activeUnlocksList -> Đang trong trạng thái "Đã mở khóa (Chờ thi lại)"
+                // KIỂM TRA TRẠNG THÁI NÚT MỞ KHÓA
                 const isCurrentlyUnlocked = activeUnlocksList.includes(data.employeeId);
                 
                 let btnHtml = '';
                 if (isCurrentlyUnlocked) {
-                    // Hiển thị nút trạng thái ĐÃ MỞ KHÓA màu xám nhạt (Disabled)
                     btnHtml = `
                         <button class="btn btn-sm btn-secondary fw-bold" disabled style="opacity: 0.65;">
                             <i class="fa-solid fa-lock-open me-1"></i> Đã mở khóa
@@ -975,7 +944,6 @@
                         </button>
                     `;
                 } else {
-                    // Hiển thị nút MỞ KHÓA THI LẠI màu vàng thông thường
                     btnHtml = `
                         <button class="btn btn-sm btn-warning fw-bold text-dark" onclick="unlockRetest('${data.employeeId}', '${data.employeeName}')">
                             <i class="fa-solid fa-unlock me-1"></i> Mở khóa thi lại
@@ -987,7 +955,7 @@
                 htmlRows += `
                     <tr>
                         <td class="fw-bold text-secondary">${data.employeeId}</td>
-                        <td class="text-start ps-3 fw-bold" style="cursor:pointer; color:var(--secondary-color);" onclick="showWrongDetails(${index})" title="Xem chi tiết câu sai / Click to view wrong answers">
+                        <td class="text-start ps-3 fw-bold" style="cursor:pointer; color:var(--secondary-color);" onclick="showWrongDetails(${index})" title="Xem chi tiết câu sai">
                             <i class="fa-solid fa-eye me-1 small text-muted"></i> ${data.employeeName}
                         </td>
                         <td class="fw-bold text-primary">${data.score}/${data.totalQuestions || 30}</td>
@@ -1045,7 +1013,7 @@
     }
 
     // ==========================================
-    // NÂNG CẤP: HIỂN THỊ CÁC CÂU LÀM SAI CỦA NHÂN VIÊN
+    // HIỂN THỊ CÁC CÂU LÀM SAI CỦA NHÂN VIÊN
     // ==========================================
     window.showWrongDetails = function(index) {
         const data = allResultsData[index];
@@ -1066,7 +1034,6 @@
         let html = '';
         data.wrongAnswersList.forEach((item, idx) => {
             if (typeof item === 'object') {
-                // Hiển thị chi tiết dạng nâng cấp song ngữ
                 html += `
                     <div class="card border border-danger-subtle p-3 mb-2" style="border-radius:8px; background:#fff5f5;">
                         <div class="fw-bold text-danger">Câu ${item.id}: ${item.question_vn}</div>
@@ -1084,7 +1051,6 @@
                     </div>
                 `;
             } else {
-                // Hiển thị dạng ID cơ bản (nếu là dữ liệu cũ)
                 html += `<div class="badge bg-danger p-2 m-1">Sai Câu số: ${item}</div>`;
             }
         });
@@ -1102,17 +1068,14 @@
     // KÍCH HOẠT MỞ KHÓA THI LẠI (ADMIN)
     // ==========================================
     window.unlockRetest = async function(empId, empName) {
-        const confirmMsg = `Bạn có chắc chắn muốn mở khóa thi lại cho Nhân viên:
-- Họ và tên: ${empName}
-- Mã số ID: ${empId}?
-
-(Dữ liệu điểm thi cũ vẫn được bảo toàn trên Firestore).`;
+        const confirmMsg = `Bạn có chắc chắn muốn mở khóa thi lại cho Nhân viên:\n- Họ và tên: ${empName}\n- Mã số ID: ${empId}?\n\n(Dữ liệu điểm thi cũ vẫn được bảo toàn trên Firestore).`;
         if (!confirm(confirmMsg)) return;
 
         try {
-            // 1. Ghi bản ghi mở khóa lên 'allow_retest' dưới dạng Date object chuẩn
-            await db.collection('allow_retest').add({
+            // 1. Tạo bản ghi mở khóa bằng ID nhân viên làm Document ID để kiểm tra dễ dàng, tránh việc phải tạo Index thủ công
+            await db.collection('allow_retest').doc(empId).set({
                 employeeId: empId,
+                employeeName: empName,
                 unlockedAt: new Date(),
                 unlockedBy: auth.currentUser ? auth.currentUser.email : "Admin"
             });
@@ -1122,7 +1085,7 @@
 
             alert(`✅ Đã mở khóa thành công cho nhân viên [${empId}]!`);
             
-            // Đồng bộ nhanh giao diện Admin để lập tức chuyển nút bấm sang "Đã mở khóa"
+            // Đồng bộ nhanh giao diện Admin để cập nhật trạng thái nút
             await generateAdminDashboard();
         } catch (error) {
             alert(`Lỗi khi mở khóa thi lại: ${error.message}`);
@@ -1139,7 +1102,6 @@
         }
 
         const excelData = allResultsData.map(item => {
-            // Định dạng thời gian an toàn trước khi kết xuất Excel
             const formattedDate = parseDateString(item.submittedAt).toLocaleString('vi-VN');
             
             return {
