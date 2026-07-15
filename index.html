@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Thi Trắc Nghiệm Bảo An - Phiên Bản Cao Cấp</title>
+    <title>Hệ Thống Thi Trắc Nghiệm - Song Ngữ Việt-Nhật</title>
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Thư viện xuất Excel (SheetJS) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     
     <style>
@@ -24,7 +27,7 @@
         
         /* KHUNG ĐĂNG NHẬP */
         .login-wrapper { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; flex-direction: column; }
-        .login-card { width: 100%; max-width: 450px; background: #ffffff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); border: none; overflow: hidden; }
+        .login-card { width: 100%; max-width: 480px; background: #ffffff; border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); border: none; overflow: hidden; }
         .login-header { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; padding: 30px 20px; text-align: center; }
         .admin-toggle-link { color: var(--secondary-color); text-decoration: none; font-weight: 600; cursor: pointer; margin-top: 15px; font-size: 0.9rem; transition: all 0.2s; }
         .admin-toggle-link:hover { text-decoration: underline; color: var(--primary-color); }
@@ -58,25 +61,54 @@
         .dashboard-card h2 { font-weight: 800; font-size: 2.2rem; color: var(--primary-color); margin-top: 5px; margin-bottom: 0; }
         .dashboard-card p { font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: #64748b; margin: 0; letter-spacing: 0.5px; }
         
+        /* Song ngữ phụ đề */
+        .sub-lang {
+            display: block;
+            font-size: 0.82rem;
+            color: #d1d5db; /* Đối với nền tối */
+            font-weight: normal;
+        }
+        .sub-lang-dark {
+            display: block;
+            font-size: 0.8rem;
+            color: #6b7280; /* Đối với nền sáng */
+            font-weight: normal;
+            margin-top: 2px;
+        }
+        
         #loginArea, #adminLoginArea { display: none; }
         #quizArea, #resultArea, #adminArea { display: none; }
+        
+        /* Responsive chỉnh chu */
+        @media (max-width: 768px) {
+            .quiz-container { margin: 15px auto; padding: 10px; }
+            .question-slide { padding: 15px; }
+            .option-box { padding: 10px 15px; }
+            .admin-container { padding: 15px; }
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     
+    <!-- ================= SCENE 1A: CỔNG ĐĂNG NHẬP NHÂN VIÊN (SONG NGỮ) ================= -->
     <div id="loginArea" style="display: flex;">
         <div class="login-wrapper w-100">
             <div class="login-card">
                 <div class="login-header">
                     <i class="fa-solid fa-user-pen mb-3" style="font-size: 3rem;"></i>
                     <h3 class="fw-bold mb-1">XÁC THỰC NHÂN VIÊN</h3>
-                    <p class="mb-0 text-white-50 fs-6">Vui lòng nhập mã số nhân viên để làm bài thi</p>
+                    <span class="sub-lang">従業員認証</span>
+                    <p class="mb-0 text-white-50 fs-6 mt-2">Vui lòng nhập mã số nhân viên để làm bài thi</p>
+                    <span class="sub-lang text-white-50">試験を受けるため従業員番号を入力してください</span>
                 </div>
                 <div class="p-4">
                     <div class="mb-4">
-                        <label class="form-label fw-bold text-secondary">Mã Số Nhân Viên (ID)</label>
+                        <label class="form-label fw-bold text-secondary">
+                            Mã Số Nhân Viên (ID)
+                            <span class="sub-lang-dark">従業員番号 (ID)</span>
+                        </label>
                         <div class="input-group input-group-lg">
                             <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-id-card"></i></span>
                             <input type="text" id="employeeIdInput" class="form-control text-center fw-bold" placeholder="Ví dụ: 12603">
@@ -85,33 +117,46 @@
                     <div class="d-grid">
                         <button id="btnVerify" class="btn btn-primary btn-lg fw-bold" style="background: var(--primary-color); border: none;">
                             <i class="fa-solid fa-right-to-bracket me-2"></i> VÀO LÀM BÀI THI
+                            <span class="sub-lang" style="font-size: 0.75rem;">試験を開始する</span>
                         </button>
                     </div>
                     <div id="loginError" class="text-danger text-center mt-3 fw-bold small" style="display: none;"></div>
                 </div>
             </div>
-            <a class="admin-toggle-link" onclick="switchLoginGateway('admin')"><i class="fa-solid fa-lock me-1"></i> Cổng Đăng Nhập Ban Quản Lý / Admin</a>
+            <a class="admin-toggle-link text-center" onclick="switchLoginGateway('admin')">
+                <i class="fa-solid fa-lock me-1"></i> Cổng Đăng Nhập Ban Quản Lý / Admin
+                <span class="sub-lang-dark text-center">管理者ログインゲートウェイ</span>
+            </a>
         </div>
     </div>
 
+    <!-- ================= SCENE 1B: CỔNG ĐĂNG NHẬP ADMIN (SONG NGỮ) ================= -->
     <div id="adminLoginArea">
         <div class="login-wrapper w-100">
             <div class="login-card border border-primary">
                 <div class="login-header bg-dark" style="background: #1e293b !important;">
                     <i class="fa-solid fa-user-shield text-warning mb-3" style="font-size: 3rem;"></i>
                     <h3 class="fw-bold mb-1 text-warning">HỆ THỐNG QUẢN TRỊ</h3>
-                    <p class="mb-0 text-white-50 fs-6">Đăng nhập tài khoản Admin cấp cao</p>
+                    <span class="sub-lang text-warning">管理システム</span>
+                    <p class="mb-0 text-white-50 fs-6 mt-2">Đăng nhập tài khoản Admin cấp cao</p>
+                    <span class="sub-lang text-white-50">管理者アカウントでログイン</span>
                 </div>
                 <div class="p-4">
                     <div class="mb-3">
-                        <label class="form-label fw-bold text-secondary">Email Admin</label>
+                        <label class="form-label fw-bold text-secondary">
+                            Email Admin
+                            <span class="sub-lang-dark">管理者メールアドレス</span>
+                        </label>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-envelope"></i></span>
                             <input type="email" id="adminEmailInput" class="form-control" placeholder="admin@nhamay.com">
                         </div>
                     </div>
                     <div class="mb-4">
-                        <label class="form-label fw-bold text-secondary">Mật Khẩu (Password)</label>
+                        <label class="form-label fw-bold text-secondary">
+                            Mật Khẩu (Password)
+                            <span class="sub-lang-dark">パスワード</span>
+                        </label>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-key text-warning"></i></span>
                             <input type="password" id="adminPasswordInput" class="form-control" placeholder="••••••••">
@@ -120,30 +165,45 @@
                     <div class="d-grid">
                         <button id="btnAdminVerify" class="btn btn-dark btn-lg fw-bold" style="background: #1e293b; border: none;">
                             <i class="fa-solid fa-unlock-keyhole me-2 text-warning"></i> ĐĂNG NHẬP HỆ THỐNG
+                            <span class="sub-lang text-warning" style="font-size: 0.75rem;">システムログイン</span>
                         </button>
                     </div>
                     <div id="adminLoginError" class="text-danger text-center mt-3 fw-bold small" style="display: none;"></div>
                 </div>
             </div>
-            <a class="admin-toggle-link" onclick="switchLoginGateway('employee')"><i class="fa-solid fa-arrow-left me-1"></i> Quay lại cổng thi của Nhân viên</a>
+            <a class="admin-toggle-link text-center" onclick="switchLoginGateway('employee')">
+                <i class="fa-solid fa-arrow-left me-1"></i> Quay lại cổng thi của Nhân viên
+                <span class="sub-lang-dark text-center">従業員試験ゲートウェイに戻る</span>
+            </a>
         </div>
     </div>
 
+    <!-- ================= SCENE 2: GIAO DIỆN LÀM BÀI SLIDE (NHÂN VIÊN SONG NGỮ) ================= -->
     <div id="quizArea">
         <div class="quiz-container">
-            <div id="recoveryAlert" class="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center small fw-bold" style="display: none !important; border-radius: 8px;">
-                <i class="fa-solid fa-triangle-exclamation me-2 animate__animated animate__flash animate__infinite text-danger"></i> 
-                Hệ thống đã tự động khôi phục phiên thi trước đó của bạn do sự cố ngắt kết nối!
+            <!-- Cảnh báo trạng thái Auto-Save khôi phục sự cố -->
+            <div id="recoveryAlert" class="alert alert-warning py-2 px-3 mb-3 d-flex flex-column small fw-bold" style="display: none !important; border-radius: 8px;">
+                <div>
+                    <i class="fa-solid fa-triangle-exclamation me-2 animate__animated animate__flash animate__infinite text-danger"></i> 
+                    Hệ thống đã tự động khôi phục phiên thi trước đó của bạn do sự cố ngắt kết nối!
+                </div>
+                <div class="sub-lang-dark ps-4">
+                    接続切断により、前回のセッションが自動的に復元されました。
+                </div>
             </div>
 
             <div class="quiz-card">
                 <div class="quiz-header d-flex justify-content-between align-items-center">
                     <div>
                         <h5 class="mb-1 fw-bold" id="examTitle">ĐỀ THI TRẮC NGHIỆM</h5>
-                        <small id="empDisplayInfo"><i class="fa-solid fa-user me-1"></i> Nhân viên: --</small>
+                        <span class="sub-lang text-white-50">肢選択式試験</span>
+                        <div class="mt-2" id="empDisplayInfo">
+                            <small><i class="fa-solid fa-user me-1"></i> Nhân viên: --</small>
+                        </div>
                     </div>
                     <div class="text-end">
                         <span class="badge bg-light text-dark py-2 px-3 fw-bold fs-6" id="progressBadge">Câu 1/30</span>
+                        <span class="sub-lang-dark text-white-50 text-end d-block mt-1" id="progressBadgeJp">問 1/30</span>
                     </div>
                 </div>
                 <div class="nav-dots" id="navDotsContainer"></div>
@@ -151,121 +211,147 @@
                 <div class="card-footer bg-white p-4 d-flex justify-content-between align-items-center border-top">
                     <button id="btnPrev" class="btn btn-outline-secondary btn-lg px-4 fw-bold">
                         <i class="fa-solid fa-arrow-left me-2"></i> CÂU TRƯỚC
+                        <span class="sub-lang-dark" style="font-size: 0.7rem;">前の問題</span>
                     </button>
+                    <!-- Trigger nộp bài (Sẽ mở Modal xác nhận) -->
                     <button id="btnTriggerSubmit" class="btn btn-danger btn-lg px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
                         <i class="fa-solid fa-paper-plane me-2"></i> NỘP BÀI THI
+                        <span class="sub-lang" style="font-size: 0.7rem;">解答を提出する</span>
                     </button>
                     <button id="btnNext" class="btn btn-primary btn-lg px-4 fw-bold" style="background: var(--secondary-color); border: none;">
                         CÂU SAU <i class="fa-solid fa-arrow-right ms-2"></i>
+                        <span class="sub-lang" style="font-size: 0.7rem;">次の問題</span>
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- ================= SCENE 3: KẾT QUẢ BÀI THI (NHÂN VIÊN SONG NGỮ) ================= -->
     <div id="resultArea">
         <div class="result-card">
             <div class="p-5 text-center">
                 <div id="resultIcon" class="mb-3"></div>
-                <h3 class="fw-bold text-dark" id="resultStatus">KẾT QUẢ BÀI THI</h3>
+                <h3 class="fw-bold text-dark mb-1" id="resultStatus">KẾT QUẢ BÀI THI</h3>
+                <span class="sub-lang-dark mb-3 d-block" id="resultStatusJp">試験結果</span>
                 <h1 class="display-3 fw-bold text-primary my-3" id="scoreDisplay">0/30</h1>
                 
                 <div class="bg-light p-3 rounded-3 text-start mb-4">
-                    <p class="mb-2"><strong>Mã nhân viên:</strong> <span id="resEmpId" class="fw-bold">--</span></p>
-                    <p class="mb-2"><strong>Họ và tên:</strong> <span id="resEmpName" class="fw-bold">--</span></p>
-                    <p class="mb-2"><strong>Thời gian nộp:</strong> <span id="resTime">--</span></p>
-                    <p class="mb-0"><strong>Trạng thái:</strong> <span id="resStatusBadge" class="fw-bold">--</span></p>
+                    <p class="mb-2"><strong>Mã nhân viên (従業員番号):</strong> <span id="resEmpId" class="fw-bold">--</span></p>
+                    <p class="mb-2"><strong>Họ và tên (氏名):</strong> <span id="resEmpName" class="fw-bold">--</span></p>
+                    <p class="mb-2"><strong>Thời gian nộp (提出時間):</strong> <span id="resTime">--</span></p>
+                    <p class="mb-0"><strong>Trạng thái (合否結果):</strong> <span id="resStatusBadge" class="fw-bold">--</span></p>
                 </div>
                 <div class="alert alert-info text-start small mb-4">
-                    <i class="fa-solid fa-circle-info me-1"></i> Kết quả đã được ghi nhận tự động lên hệ thống dữ liệu tổng. Bạn có thể đóng trình duyệt.
+                    <div><i class="fa-solid fa-circle-info me-1"></i> Kết quả đã được ghi nhận tự động lên hệ thống dữ liệu tổng. Bạn có thể đóng trình duyệt.</div>
+                    <div class="sub-lang-dark mt-1">結果は自動的にデータベースに記録されました。ブラウザを閉じても構いません。</div>
                 </div>
                 <div class="d-grid col-8 mx-auto">
                     <button class="btn btn-outline-secondary" onclick="window.location.reload()">
                         <i class="fa-solid fa-rotate-right me-2"></i> Kết thúc phiên thi
+                        <span class="sub-lang-dark" style="font-size: 0.75rem;">セッションを終了する</span>
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- ================= SCENE 4: BẢNG QUẢN TRỊ ADMIN CHUYÊN NGHIỆP (SONG NGỮ) ================= -->
     <div id="adminArea">
         <div class="admin-container">
-            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom flex-wrap gap-3">
                 <div>
                     <h3 class="fw-bold text-primary mb-1"><i class="fa-solid fa-chart-line me-2"></i>TRUNG TÂM PHÂN TÍCH & QUẢN TRỊ</h3>
-                    <p class="text-muted mb-0">Hệ thống phân tích dữ liệu kiểm tra an toàn thời gian thực</p>
+                    <span class="sub-lang-dark fw-bold" style="font-size: 0.9rem;">分析・管理センター</span>
+                    <p class="text-muted mb-0 mt-1">Hệ thống phân tích dữ liệu kiểm tra an toàn thời gian thực</p>
+                    <span class="sub-lang-dark">リアルタイム労働安全試験データ分析システム</span>
                 </div>
-                <div>
-                    <button id="btnExportAllExcel" class="btn btn-success btn-lg fw-bold me-2">
-                        <i class="fa-solid fa-file-excel me-2"></i> XUẤT FILE EXCEL TỔNG HỢP
+                <div class="d-flex gap-2 flex-wrap">
+                    <button id="btnExportAllExcel" class="btn btn-success fw-bold">
+                        <i class="fa-solid fa-file-excel me-2"></i> XUẤT EXCEL TỔNG HỢP
+                        <span class="sub-lang text-white" style="font-size: 0.7rem;">総合エクセル出力</span>
                     </button>
-                    <button class="btn btn-outline-danger" onclick="logoutAdmin()"><i class="fa-solid fa-power-off"></i> Đăng xuất</button>
+                    <button class="btn btn-outline-danger fw-bold" onclick="logoutAdmin()">
+                        <i class="fa-solid fa-power-off me-1"></i> Đăng xuất
+                        <span class="sub-lang-dark" style="font-size: 0.7rem;">ログアウト</span>
+                    </button>
                 </div>
             </div>
 
+            <!-- DASHBOARD KPI CARDS (SONG NGỮ) -->
             <div class="row g-3 mb-4">
-                <div class="col-md-3">
+                <div class="col-md-3 col-sm-6">
                     <div class="dashboard-card border-start border-primary border-4">
                         <p>Tổng lượt tham gia</p>
+                        <span class="sub-lang-dark" style="font-size: 0.7rem;">総受験回数</span>
                         <h2 id="dashTotal">0</h2>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 col-sm-6">
                     <div class="dashboard-card border-start border-success border-4">
-                        <p>Số nhân viên ĐẠT</p>
+                        <p class="text-success">Số nhân viên ĐẠT</p>
+                        <span class="sub-lang-dark text-success" style="font-size: 0.7rem;">合格者数</span>
                         <h2 class="text-success" id="dashPassed">0</h2>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 col-sm-6">
                     <div class="dashboard-card border-start border-danger border-4">
-                        <p>Số nhân viên TRƯỢT</p>
+                        <p class="text-danger">Số nhân viên TRƯỢT</p>
+                        <span class="sub-lang-dark text-danger" style="font-size: 0.7rem;">不合格者数</span>
                         <h2 class="text-danger" id="dashFailed">0</h2>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 col-sm-6">
                     <div class="dashboard-card border-start border-warning border-4">
-                        <p>Tỷ lệ Đạt nhà máy</p>
+                        <p class="text-warning">Tỷ lệ Đạt nhà máy</p>
+                        <span class="sub-lang-dark text-warning" style="font-size: 0.7rem;">工場合格率</span>
                         <h2 class="text-warning" id="dashPercent">0%</h2>
                     </div>
                 </div>
             </div>
 
+            <!-- BIỂU ĐỒ TIẾN TRÌNH & PHÂN TÍCH LỖ HỔNG (SONG NGỮ) -->
             <div class="row g-4 mb-5">
                 <div class="col-md-5">
                     <div class="card p-4 h-100 border-0 bg-light">
-                        <h6 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-pie-chart me-1"></i> Tỷ Lệ Đạt Toàn Diện</h6>
+                        <h6 class="fw-bold text-secondary mb-1"><i class="fa-solid fa-pie-chart me-1"></i> Tỷ Lệ Đạt Toàn Diện</h6>
+                        <span class="sub-lang-dark fw-bold mb-3" style="font-size: 0.75rem;">総合合格率割合</span>
                         <div class="progress my-3" style="height: 35px; border-radius: 8px;">
                             <div id="progressChartPassed" class="progress-bar bg-success fw-bold" role="progressbar" style="width: 0%">Đạt</div>
                             <div id="progressChartFailed" class="progress-bar bg-danger fw-bold" role="progressbar" style="width: 0%">Trượt</div>
                         </div>
                         <small class="text-muted text-center mt-2">Mức điểm yêu cầu: Đạt tối thiểu 24/30 câu (80%)</small>
+                        <small class="text-muted text-center d-block">合格基準：30問中24問以上（80％）</small>
                     </div>
                 </div>
                 <div class="col-md-7">
                     <div class="card p-4 h-100 border-0 bg-light">
-                        <h6 class="fw-bold text-danger mb-2"><i class="fa-solid fa-triangle-exclamation me-1"></i> Cảnh Báo Lỗ Hổng Kiến Thức (Làm Sai Nhiều)</h6>
-                        <small class="text-muted d-block mb-3">Tự động thống kê các mã câu hỏi nhân viên bị nhầm lẫn nhiều nhất</small>
+                        <h6 class="fw-bold text-danger mb-1"><i class="fa-solid fa-triangle-exclamation me-1"></i> Cảnh Báo Lỗ Hổng Kiến Thức (Làm Sai Nhiều)</h6>
+                        <span class="sub-lang-dark fw-bold text-danger mb-2" style="font-size: 0.75rem;">知識不足に関する警告（誤答頻度の高い問題）</span>
+                        <small class="text-muted d-block mb-3">Tự động thống kê các mã câu hỏi nhân viên bị nhầm lẫn nhiều nhất (従業員が最も間違いやすい問題を自動統計)</small>
                         <div id="weakPointContainer" class="small"></div>
                     </div>
                 </div>
             </div>
 
-            <h5 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-list-check me-2"></i>Danh Sách Kết Quả Chi Tiết</h5>
+            <!-- BẢNG KẾT QUẢ CHI TIẾT + NÚT MỞ KHÓA (SONG NGỮ) -->
+            <h5 class="fw-bold text-secondary mb-1"><i class="fa-solid fa-list-check me-2"></i>Danh Sách Kết Quả Chi Tiết</h5>
+            <span class="sub-lang-dark fw-bold mb-3" style="font-size: 0.8rem;">詳細結果リスト</span>
             <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                 <table class="table table-bordered table-striped align-middle text-center mb-0">
                     <thead class="table-dark sticky-top">
                         <tr>
-                            <th>Mã Nhân Viên</th>
-                            <th>Họ và Tên</th>
-                            <th>Điểm Số</th>
-                            <th>Trạng Thái</th>
-                            <th>Thời Gian Nộp</th>
-                            <th>Hành Động</th>
+                            <th>Mã Nhân Viên<span class="sub-lang" style="font-size: 0.7rem;">従業員ID</span></th>
+                            <th>Họ và Tên<span class="sub-lang" style="font-size: 0.7rem;">氏名</span></th>
+                            <th>Điểm Số<span class="sub-lang" style="font-size: 0.7rem;">得点</span></th>
+                            <th>Trạng Thái<span class="sub-lang" style="font-size: 0.7rem;">結果</span></th>
+                            <th>Thời Gian Nộp<span class="sub-lang" style="font-size: 0.7rem;">提出時間</span></th>
+                            <th>Hành Động<span class="sub-lang" style="font-size: 0.7rem;">操作</span></th>
                         </tr>
                     </thead>
                     <tbody id="adminTableBody">
                         <tr>
-                            <td colspan="6" class="text-muted py-4">Đang truy xuất dữ liệu từ đám mây Firestore...</td>
+                            <td colspan="6" class="text-muted py-4">Đang truy xuất dữ liệu từ đám mây Firestore... (クラウドからデータを同期しています...)</td>
                         </tr>
                     </tbody>
                 </table>
@@ -275,38 +361,52 @@
 
 </div>
 
+<!-- ================= MODAL XÁC NHẬN NỘP BÀI 2 BƯỚC (NHÂN VIÊN SONG NGỮ) ================= -->
 <div class="modal fade" id="confirmSubmitModal" tabindex="-1" aria-labelledby="confirmSubmitModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 14px;">
-            <div class="modal-header bg-danger text-white">
+            <div class="modal-header bg-danger text-white flex-column align-items-start">
                 <h5 class="modal-title fw-bold" id="confirmSubmitModalLabel"><i class="fa-solid fa-triangle-exclamation me-2 animate__animated animate__flash animate__infinite"></i>XÁC NHẬN NỘP BÀI THI</h5>
+                <span class="sub-lang text-white-50" style="font-size: 0.8rem;">提出確認</span>
             </div>
             <div class="modal-body p-4 text-center">
                 <i class="fa-solid fa-clipboard-question text-danger mb-3" style="font-size: 4.5rem;"></i>
-                <h5 class="fw-bold text-dark mb-3">Bạn chắc chắn muốn nộp bài?</h5>
+                <h5 class="fw-bold text-dark mb-1">Bạn chắc chắn muốn nộp bài?</h5>
+                <span class="sub-lang-dark fw-bold mb-3 d-block">本当に解答を提出しますか？</span>
                 
+                <!-- Hiển thị thống kê câu hỏi chưa làm động -->
                 <div id="submitStatistics" class="alert alert-warning text-start py-2 px-3 small fw-bold mb-4" style="border-radius: 8px;">
                      Chưa có số liệu.
                 </div>
 
+                <!-- Lớp bảo vệ 2: Checkbox xác nhận cưỡng bức -->
                 <div class="form-check text-start bg-light p-3 border rounded-3 mb-3">
                     <input class="form-check-input ms-0 me-2" type="checkbox" id="checkFinalConfirm" onchange="toggleFinalSubmitBtn()">
                     <label class="form-check-label fw-bold text-secondary small" for="checkFinalConfirm" style="user-select: none; cursor: pointer;">
                         Tôi xác nhận muốn nộp bài và kết thúc phần thi tại đây.
+                        <span class="sub-lang-dark" style="font-size: 0.72rem;">私はここに解答を提出し、試験を終了することを確認します。</span>
                     </label>
                 </div>
             </div>
             <div class="modal-footer bg-light border-0 d-flex justify-content-between p-3">
-                <button type="button" class="btn btn-secondary px-3 fw-bold" data-bs-dismiss="modal">LÀM TIẾP</button>
-                <button type="button" id="btnSubmitExam" class="btn btn-danger px-4 fw-bold" disabled>NỘP BÀI THI</button>
+                <button type="button" class="btn btn-secondary px-3 fw-bold" data-bs-dismiss="modal">
+                    LÀM TIẾP
+                    <span class="sub-lang text-white" style="font-size: 0.7rem;">試験を続ける</span>
+                </button>
+                <button type="button" id="btnSubmitExam" class="btn btn-danger px-4 fw-bold" disabled>
+                    NỘP BÀI THI
+                    <span class="sub-lang text-white" style="font-size: 0.7rem;">解答を提出する</span>
+                </button>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Firebase SDK Compat -->
 <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+<!-- Bootstrap JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
@@ -361,20 +461,20 @@
         const loginError = document.getElementById('loginError');
         
         if (!empIdInput) {
-            loginError.innerText = "Vui lòng nhập Mã số nhân viên!";
+            loginError.innerHTML = "Vui lòng nhập Mã số nhân viên! <span class='sub-lang-dark text-danger'>従業員番号を入力してください！</span>";
             loginError.style.display = 'block';
             return;
         }
 
         loginError.style.display = 'none';
         document.getElementById('btnVerify').disabled = true;
-        document.getElementById('btnVerify').innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Đang kiểm tra...`;
+        document.getElementById('btnVerify').innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Đang kiểm tra... <span class='sub-lang' style='font-size:0.75rem;'>検証中...</span>`;
 
         try {
             // Bước 1: Quét xem nhân viên có tồn tại trong danh sách 'valid_employees' không
             const empDoc = await db.collection('valid_employees').doc(empIdInput).get();
             if (!empDoc.exists) {
-                loginError.innerText = `❌ Mã số nhân viên [${empIdInput}] không tồn tại trên hệ thống!`;
+                loginError.innerHTML = `❌ Mã số nhân viên [${empIdInput}] không tồn tại trên hệ thống!<br><span class='sub-lang-dark text-danger'>従業員番号 [${empIdInput}] はシステムに存在しません！</span>`;
                 loginError.style.display = 'block';
                 resetEmployeeBtn();
                 return;
@@ -426,7 +526,7 @@
                 }
 
                 if (!isAllowed) {
-                    loginError.innerText = `⚠️ Từ chối: Bạn đã hoàn thành bài thi này. Hãy liên hệ Quản lý (Admin) để mở khóa nếu cần thi lại!`;
+                    loginError.innerHTML = `⚠️ Từ chối: Bạn đã hoàn thành bài thi này. Hãy liên hệ Quản lý (Admin) để mở khóa nếu cần thi lại!<br><span class='sub-lang-dark text-danger'>⚠️ 拒否されました: この試験は既に完了しています。再試験が必要な場合は、管理者にロック解除を依頼してください。</span>`;
                     loginError.style.display = 'block';
                     resetEmployeeBtn();
                     return;
@@ -452,12 +552,15 @@
 
     function resetEmployeeBtn() {
         document.getElementById('btnVerify').disabled = false;
-        document.getElementById('btnVerify').innerHTML = `<i class="fa-solid fa-right-to-bracket me-2"></i> VÀO LÀM BÀI THI`;
+        document.getElementById('btnVerify').innerHTML = `<i class="fa-solid fa-right-to-bracket me-2"></i> VÀO LÀM BÀI THI <span class="sub-lang" style="font-size: 0.75rem;">試験を開始する</span>`;
     }
 
     async function initQuizScreen() {
         const empName = currentEmployee.name || "Nhân viên";
-        document.getElementById('empDisplayInfo').innerHTML = `<i class="fa-solid fa-user me-1"></i> Nhân viên: <strong>${empName}</strong> | Mã số: <strong>${currentEmployee.id}</strong>`;
+        document.getElementById('empDisplayInfo').innerHTML = `
+            <small class="d-block"><i class="fa-solid fa-user me-1"></i> Nhân viên: <strong>${empName}</strong> | Mã số: <strong>${currentEmployee.id}</strong></small>
+            <small class="sub-lang text-white-50"><i class="fa-solid fa-user me-1"></i> 従業員: <strong>${empName}</strong> | 番号: <strong>${currentEmployee.id}</strong></small>
+        `;
         
         loginArea.style.display = 'none';
         quizArea.style.display = 'block';
@@ -480,7 +583,7 @@
         try {
             const snapshot = await db.collection('questions').get();
             if (snapshot.empty) {
-                document.getElementById('questionContent').innerHTML = `<div class="alert alert-danger text-center">Chưa có câu hỏi trên Cloud.</div>`;
+                document.getElementById('questionContent').innerHTML = `<div class="alert alert-danger text-center">Chưa có câu hỏi trên Cloud. (クラウドにまだ問題がありません)</div>`;
                 return;
             }
             loadedQuestions = [];
@@ -518,6 +621,7 @@
         if (activeDot) activeDot.classList.add('active');
 
         document.getElementById('progressBadge').innerText = `Câu ${index + 1}/${loadedQuestions.length}`;
+        document.getElementById('progressBadgeJp').innerText = `問 ${index + 1}/${loadedQuestions.length}`;
         const prefixes = ['A', 'B', 'C', 'D'];
 
         let optionsHtml = q.options.map((opt, optIdx) => {
@@ -538,7 +642,7 @@
 
         container.innerHTML = `
             <div class="question-title">Câu ${index + 1}: ${q.question_vn}</div>
-            <span class="lang-jp"><i class="fa-solid fa-language me-1"></i> ${q.question_jp}</span>
+            <span class="lang-jp"><i class="fa-solid fa-language me-1"></i> 問 ${index + 1}: ${q.question_jp}</span>
             <div class="mt-3">${optionsHtml}</div>
         `;
 
@@ -577,7 +681,7 @@
     document.getElementById('btnPrev').addEventListener('click', () => { saveCurrentAnswer(); if (currentQuestionIndex > 0) showQuestion(currentQuestionIndex - 1); });
 
     // ==========================================
-    // XỬ LÝ MODAL NỘP BÀI 2 BƯỚC (NHÂN VIÊN)
+    // XỬ LÝ MODAL NỘP BÀI 2 BƯỚC (NHÂN VIÊN SONG NGỮ)
     // ==========================================
     function updateSubmitStatistics() {
         const totalQs = loadedQuestions.length;
@@ -587,10 +691,16 @@
         const statDiv = document.getElementById('submitStatistics');
         if (remaining > 0) {
             statDiv.className = "alert alert-warning text-start py-2 px-3 small fw-bold mb-4";
-            statDiv.innerHTML = `<i class="fa-solid fa-circle-exclamation me-2 text-danger"></i> Bạn đã làm <strong>${answeredCount}/${totalQs}</strong> câu. Vẫn còn <strong>${remaining}</strong> câu chưa hoàn thành!`;
+            statDiv.innerHTML = `
+                <div><i class="fa-solid fa-circle-exclamation me-2 text-danger"></i> Bạn đã làm <strong>${answeredCount}/${totalQs}</strong> câu. Vẫn còn <strong>${remaining}</strong> câu chưa hoàn thành!</div>
+                <div class="sub-lang-dark text-warning-emphasis mt-1">あなたは現在 <strong>${answeredCount}/${totalQs}</strong> 問を回答しました。未回答がまだ <strong>${remaining}</strong> 問あります。</div>
+            `;
         } else {
             statDiv.className = "alert alert-success text-start py-2 px-3 small fw-bold mb-4";
-            statDiv.innerHTML = `<i class="fa-solid fa-circle-check me-2 text-success"></i> Tuyệt vời! Bạn đã hoàn thành toàn bộ <strong>${totalQs}/${totalQs}</strong> câu hỏi.`;
+            statDiv.innerHTML = `
+                <div><i class="fa-solid fa-circle-check me-2 text-success"></i> Tuyệt vời! Bạn đã hoàn thành toàn bộ <strong>${totalQs}/${totalQs}</strong> câu hỏi.</div>
+                <div class="sub-lang-dark text-success-emphasis mt-1">素晴らしい！あなたは全 <strong>${totalQs}/${totalQs}</strong> 問の回答をすべて完了しました。</div>
+            `;
         }
     }
 
@@ -654,27 +764,32 @@
 
             const resultIcon = document.getElementById('resultIcon');
             const resultStatus = document.getElementById('resultStatus');
+            const resultStatusJp = document.getElementById('resultStatusJp');
             const resStatusBadge = document.getElementById('resStatusBadge');
 
             if (isPassed) {
                 resultIcon.innerHTML = `<i class="fa-solid fa-circle-check text-success" style="font-size: 5.5rem;"></i>`;
                 resultStatus.innerText = "CHÚC MỪNG BẠN ĐÃ ĐẠT!";
-                resultStatus.className = "fw-bold mb-3 text-success";
-                resStatusBadge.innerHTML = `<span class="badge bg-success fs-6">ĐẠT (PASSED)</span>`;
+                resultStatus.className = "fw-bold text-success";
+                resultStatusJp.innerText = "合格おめでとうございます！";
+                resultStatusJp.className = "sub-lang-dark fw-bold text-success mb-3";
+                resStatusBadge.innerHTML = `<span class="badge bg-success fs-6">ĐẠT (合格)</span>`;
             } else {
                 resultIcon.innerHTML = `<i class="fa-solid fa-circle-xmark text-danger" style="font-size: 5.5rem;"></i>`;
                 resultStatus.innerText = "RẤT TIẾC, BẠN CHƯA ĐẠT!";
-                resultStatus.className = "fw-bold mb-3 text-danger";
-                resStatusBadge.innerHTML = `<span class="badge bg-danger fs-6">CHƯA ĐẠT (FAILED)</span>`;
+                resultStatus.className = "fw-bold text-danger";
+                resultStatusJp.innerText = "残念ながら、不合格です。";
+                resultStatusJp.className = "sub-lang-dark fw-bold text-danger mb-3";
+                resStatusBadge.innerHTML = `<span class="badge bg-danger fs-6">CHƯA ĐẠT (不合格)</span>`;
             }
 
             quizArea.style.display = 'none';
             resultArea.style.display = 'block';
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (error) {
-            alert("Lỗi lưu kết quả bài thi: " + error.message);
+            alert("Lỗi lưu kết quả bài thi (試験提出時のエラー): " + error.message);
             document.getElementById('btnTriggerSubmit').disabled = false;
-            document.getElementById('btnTriggerSubmit').innerHTML = `<i class="fa-solid fa-paper-plane me-2"></i> NỘP BÀI THI`;
+            document.getElementById('btnTriggerSubmit').innerHTML = `<i class="fa-solid fa-paper-plane me-2"></i> NỘP BÀI THI <span class="sub-lang" style="font-size: 0.7rem;">解答を提出する</span>`;
         }
     });
 
@@ -687,13 +802,13 @@
         const adminLoginError = document.getElementById('adminLoginError');
 
         if (!emailInput || !passwordInput) {
-            adminLoginError.innerText = "❌ Vui lòng điền đầy đủ Email và Mật khẩu Admin!";
+            adminLoginError.innerHTML = "❌ Vui lòng điền đầy đủ Email và Mật khẩu Admin!<br><span class='sub-lang-dark text-danger'>メールアドレスとパスワードを両方入力してください！</span>";
             adminLoginError.style.display = 'block';
             return;
         }
 
         document.getElementById('btnAdminVerify').disabled = true;
-        document.getElementById('btnAdminVerify').innerHTML = `<span class="spinner-border spinner-border-sm me-2 text-warning"></span> Đang xác thực...`;
+        document.getElementById('btnAdminVerify').innerHTML = `<span class="spinner-border spinner-border-sm me-2 text-warning"></span> Đang xác thực... <span class='sub-lang text-warning' style='font-size:0.75rem;'>検証中...</span>`;
 
         try {
             await auth.signInWithEmailAndPassword(emailInput, passwordInput);
@@ -702,11 +817,11 @@
             adminArea.style.display = 'block';
             await generateAdminDashboard();
         } catch (error) {
-            adminLoginError.innerText = "❌ Tài khoản hoặc mật khẩu Admin không hợp lệ!";
+            adminLoginError.innerHTML = "❌ Tài khoản hoặc mật khẩu Admin không hợp lệ!<br><span class='sub-lang-dark text-danger'>管理者アカウントまたはパスワードが無効です！</span>";
             adminLoginError.style.display = 'block';
         } finally {
             document.getElementById('btnAdminVerify').disabled = false;
-            document.getElementById('btnAdminVerify').innerHTML = `<i class="fa-solid fa-unlock-keyhole me-2 text-warning"></i> ĐĂNG NHẬP HỆ THỐNG`;
+            document.getElementById('btnAdminVerify').innerHTML = `<i class="fa-solid fa-unlock-keyhole me-2 text-warning"></i> ĐĂNG NHẬP HỆ THỐNG <span class="sub-lang text-warning" style="font-size: 0.75rem;">システムログイン</span>`;
         }
     });
 
@@ -716,14 +831,14 @@
     }
 
     // ========================================================
-    // BẢNG QUẢN TRỊ ADMIN (CẬP NHẬT NÚT MỞ KHÓA THI LẠI)
+    // BẢNG QUẢN TRỊ ADMIN (CẬP NHẬT NÚT MỞ KHÓA THI LẠI SONG NGỮ)
     // ========================================================
     async function generateAdminDashboard() {
         const tableBody = document.getElementById('adminTableBody');
         try {
             const snapshot = await db.collection('exam_results').get();
             if (snapshot.empty) {
-                tableBody.innerHTML = `<tr><td colspan="6" class="text-muted py-4">Chưa có dữ liệu bài kiểm tra nào được ghi nhận.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-muted py-4">Chưa có dữ liệu bài kiểm tra nào được ghi nhận. (データがまだありません。)</td></tr>`;
                 return;
             }
 
@@ -745,7 +860,7 @@
                     });
                 }
 
-                const badge = data.isPassed ? `<span class="badge bg-success">ĐẠT</span>` : `<span class="badge bg-danger">CHƯA ĐẠT</span>`;
+                const badge = data.isPassed ? `<span class="badge bg-success">ĐẠT (合格)</span>` : `<span class="badge bg-danger">CHƯA ĐẠT (不合格)</span>`;
                 
                 // Tích hợp nút "Mở khóa thi lại" thay thế nút Xóa hẳn dữ liệu cũ
                 htmlRows += `
@@ -758,6 +873,7 @@
                         <td>
                             <button class="btn btn-sm btn-warning fw-bold text-dark" onclick="unlockRetest('${data.employeeId}', '${data.employeeName}')">
                                 <i class="fa-solid fa-unlock me-1"></i> Mở khóa thi lại
+                                <span class="sub-lang-dark" style="font-size: 0.65rem; color:#4a4a4a;">再試験許可</span>
                             </button>
                         </td>
                     </tr>
@@ -785,14 +901,18 @@
             let sortedWeakQuestions = Object.keys(wrongQuestionsCounter).sort((a, b) => wrongQuestionsCounter[b] - wrongQuestionsCounter[a]);
 
             if (sortedWeakQuestions.length === 0) {
-                weakContainer.innerHTML = `<div class="text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i> Chưa phát hiện lỗ hổng lớn. Nhân viên làm bài rất đồng đều!</div>`;
+                weakContainer.innerHTML = `<div class="text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i> Chưa phát hiện lỗ hổng lớn. Nhân viên làm bài rất đồng đều! (弱点は検出されませんでした。全従業員の回答は非常に安定しています。)</div>`;
             } else {
                 let weakHtml = '<ul class="list-group border-0">';
                 sortedWeakQuestions.slice(0, 3).forEach(qId => {
                     weakHtml += `
-                        <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0 py-1 bg-transparent">
-                            <span><i class="fa-solid fa-triangle-exclamation text-warning me-2"></i> <strong>Câu số ${qId}</strong> trong ngân hàng đề thi</span>
-                            <span class="badge bg-danger rounded-pill">Có ${wrongQuestionsCounter[qId]} lượt làm sai</span>
+                        <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0 py-1 bg-transparent flex-wrap">
+                            <span>
+                                <i class="fa-solid fa-triangle-exclamation text-warning me-2"></i> 
+                                <strong>Câu số ${qId}</strong> trong ngân hàng đề thi 
+                                <span class="sub-lang-dark d-inline"> (問題データベース内の第 ${qId} 問)</span>
+                            </span>
+                            <span class="badge bg-danger rounded-pill">Có ${wrongQuestionsCounter[qId]} lượt làm sai (${wrongQuestionsCounter[qId]} 回不合格)</span>
                         </li>
                     `;
                 });
@@ -801,7 +921,7 @@
             }
 
         } catch (error) {
-            tableBody.innerHTML = `<tr><td colspan="6" class="text-danger py-4">Lỗi đồng bộ Dashboard: ${error.message}</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="6" class="text-danger py-4">Lỗi đồng bộ Dashboard (ダッシュボード同期エラー): ${error.message}</td></tr>`;
         }
     }
 
@@ -809,7 +929,11 @@
     // LOGIC KÍCH HOẠT MỞ KHÓA THI LẠI (ADMIN)
     // ==========================================
     window.unlockRetest = async function(empId, empName) {
-        const confirmMsg = `Bạn có chắc chắn muốn mở khóa thi lại cho Nhân viên:\n- Họ và tên: ${empName}\n- Mã số ID: ${empId}?\n\n(Dữ liệu điểm thi cũ vẫn được lưu trữ bảo toàn trên Firestore).`;
+        const confirmMsg = `Bạn có chắc chắn muốn mở khóa thi lại cho Nhân viên (本当にこの従業員の再試験を許可しますか？):
+- Họ và tên (氏名): ${empName}
+- Mã số ID (従業員ID): ${empId}?
+
+(Dữ liệu điểm thi cũ vẫn được lưu trữ bảo toàn trên Firestore - 以前のデータはFirestoreに保持されたままになります。).`;
         if (!confirm(confirmMsg)) return;
 
         try {
@@ -825,10 +949,13 @@
             // 2. Bảo hiểm: Xóa luôn phiên thi bị treo của người đó nếu có
             await db.collection('active_sessions').doc(empId).delete();
 
-            alert(`✅ Đã mở khóa thành công! Nhân viên [${empId}] hiện tại đã có thể vào trang và tiến hành làm bài thi mới.`);
+            alert(`✅ Đã mở khóa thành công!
+Nhân viên [${empId}] hiện tại đã có thể vào trang và tiến hành làm bài thi mới.
+
+ロック解除が完了しました。従業員 [${empId}] は試験を再受けることができます。`);
             await generateAdminDashboard();
         } catch (error) {
-            alert(`Lỗi khi mở khóa thi lại: ${error.message}`);
+            alert(`Lỗi khi mở khóa thi lại (ロック解除エラー): ${error.message}`);
         }
     };
 
@@ -837,27 +964,27 @@
     // ==========================================
     document.getElementById('btnExportAllExcel').addEventListener('click', () => {
         if (allResultsData.length === 0) {
-            alert("Không có dữ liệu kết quả nào để kết xuất file Excel!");
+            alert("Không có dữ liệu kết quả nào để kết xuất file Excel! (出力するデータがありません！)");
             return;
         }
 
         const excelData = allResultsData.map(item => ({
-            "MÃ SỐ NHÂN VIÊN": item.employeeId,
-            "HỌ VÀ TÊN": item.employeeName,
-            "ĐIỂM SỐ": `${item.score}/${item.totalQuestions || 30}`,
-            "SỐ CÂU ĐÚNG": item.score,
-            "TRẠNG THÁI": item.isPassed ? "ĐẠT (PASSED)" : "CHƯA ĐẠT (FAILED)",
-            "THỜI GIAN NỘP BÀI": item.submittedAt
+            "MÃ SỐ NHÂN VIÊN (従業員ID)": item.employeeId,
+            "HỌ VÀ TÊN (氏名)": item.employeeName,
+            "ĐIỂM SỐ (得点)": `${item.score}/${item.totalQuestions || 30}`,
+            "SỐ CÂU ĐÚNG (正解数)": item.score,
+            "TRẠNG THÁI (結果)": item.isPassed ? "ĐẠT (PASSED)" : "CHƯA ĐẠT (FAILED)",
+            "THỜI GIAN NỘP BÀI (提出時間)": item.submittedAt
         }));
 
         const ws = XLSX.utils.json_to_sheet(excelData);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Báo Cáo Toàn Nhà Máy");
 
-        ws['!cols'] = [{wch: 18}, {wch: 25}, {wch: 12}, {wch: 15}, {wch: 20}, {wch: 25}];
+        ws['!cols'] = [{wch: 25}, {wch: 25}, {wch: 15}, {wch: 20}, {wch: 20}, {wch: 25}];
 
         const currentDate = new Date().toISOString().slice(0,10);
-        XLSX.writeFile(wb, `Bao_Cao_Ket_Qua_An_Toan_Tong_Hop_${currentDate}.xlsx`);
+        XLSX.writeFile(wb, `Bao_Cao_An_Toan_Song_Ngu_${currentDate}.xlsx`);
     });
 
     // 🔒 BẢO MẬT: CHẶN F12 VÀ CHUỘT PHẢI
