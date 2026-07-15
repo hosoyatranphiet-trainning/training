@@ -85,68 +85,12 @@
         #loginArea, #adminLoginArea { display: none; }
         #quizArea, #resultArea, #adminArea { display: none; }
         
-        /* Responsive tối ưu hóa trên mọi thiết bị */
-        @media (max-width: 992px) {
-            /* Dành cho iPad và Tablet */
-            .quiz-container { margin: 25px auto; padding: 15px; }
-            .card-footer {
-                padding: 15px !important;
-            }
-            .card-footer .btn {
-                font-size: 0.95rem !important;
-                padding: 10px 15px !important;
-            }
-            .card-footer .sub-lang, 
-            .card-footer .sub-lang-dark {
-                font-size: 0.65rem !important;
-            }
-        }
-
-        @media (max-width: 576px) {
-            /* Dành cho Điện thoại di động */
-            .quiz-container { 
-                margin: 10px auto; 
-                padding: 5px; 
-            }
-            .question-slide { 
-                padding: 20px 15px; 
-                min-height: 280px;
-            }
-            .option-box { 
-                padding: 12px 15px; 
-            }
-            .admin-container { 
-                padding: 15px; 
-            }
-
-            /* Tối ưu hóa nút điều hướng trên Mobile thành dạng Grid cân đối */
-            .card-footer {
-                display: grid !important;
-                grid-template-columns: 1fr 1.2fr 1fr;
-                gap: 8px;
-                padding: 12px 10px !important;
-            }
-            .card-footer .btn {
-                width: 100% !important;
-                padding: 12px 5px !important;
-                font-size: 0.8rem !important;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                border-radius: 10px;
-                line-height: 1.2;
-            }
-            /* Ẩn bớt phụ đề tiếng Nhật trên Mobile để tránh bị tràn chữ */
-            .card-footer .btn .sub-lang,
-            .card-footer .btn .sub-lang-dark {
-                display: none !important; 
-            }
-            /* Đẩy icon lên phía trên của chữ chính */
-            .card-footer .btn i {
-                margin: 0 0 4px 0 !important;
-                font-size: 1.1rem;
-            }
+        /* Responsive chỉnh chu */
+        @media (max-width: 768px) {
+            .quiz-container { margin: 15px auto; padding: 10px; }
+            .question-slide { padding: 15px; }
+            .option-box { padding: 10px 15px; }
+            .admin-container { padding: 15px; }
         }
     </style>
 </head>
@@ -268,18 +212,15 @@
                 <div class="question-slide" id="questionContent"></div>
                 <div class="card-footer bg-white p-4 d-flex justify-content-between align-items-center border-top">
                     <button id="btnPrev" class="btn btn-outline-secondary btn-lg px-4 fw-bold">
-                        <i class="fa-solid fa-arrow-left me-md-2"></i>
-                        <span>CÂU TRƯỚC</span>
+                        <i class="fa-solid fa-arrow-left me-2"></i> CÂU TRƯỚC
                         <span class="sub-lang-dark" style="font-size: 0.7rem;">前の問題</span>
                     </button>
                     <button id="btnTriggerSubmit" class="btn btn-danger btn-lg px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
-                        <i class="fa-solid fa-paper-plane me-md-2"></i>
-                        <span>NỘP BÀI</span>
-                        <span class="sub-lang" style="font-size: 0.7rem;">解答を提出</span>
+                        <i class="fa-solid fa-paper-plane me-2"></i> NỘP BÀI THI
+                        <span class="sub-lang" style="font-size: 0.7rem;">解答を提出する</span>
                     </button>
                     <button id="btnNext" class="btn btn-primary btn-lg px-4 fw-bold" style="background: var(--secondary-color); border: none;">
-                        <span>CÂU SAU</span>
-                        <i class="fa-solid fa-arrow-right ms-md-2"></i>
+                        CÂU SAU <i class="fa-solid fa-arrow-right ms-2"></i>
                         <span class="sub-lang" style="font-size: 0.7rem;">次の問題</span>
                     </button>
                 </div>
@@ -321,8 +262,8 @@
                 <div>
                     <h3 class="fw-bold text-primary mb-1"><i class="fa-solid fa-chart-line me-2"></i>TRUNG TÂM PHÂN TÍCH & QUẢN TRỊ</h3>
                     <span class="sub-lang-dark fw-bold" style="font-size: 0.9rem;">分析・管理センター</span>
-                    <p class="text-muted mb-0 mt-1">Hệ thống phân tích dữ liệu kiểm tra an toàn thời gian thực</p>
-                    <span class="sub-lang-dark">リアルタイム労働安全試験データ分析システム</span>
+                    <p class="text-muted mb-0 mt-1">Hệ thống phân tích dữ liệu kiểm tra thời gian thực</p>
+                    <span class="sub-lang-dark">リアルタイム試験データ分析システム</span>
                 </div>
                 <div class="d-flex gap-2 flex-wrap">
                     <button id="btnExportAllExcel" class="btn btn-success fw-bold">
@@ -562,37 +503,36 @@
                                       .limit(1)
                                       .get();
                                       
-           if (!checkExam.empty) {
-    const lastExam = checkExam.docs[0].data();
-    
-    const checkUnlock = await db.collection('allow_retest')
-                                .where('employeeId', '==', empIdInput)
-                                .orderBy('unlockedAt', 'desc')
-                                .limit(1)
-                                .get();
-    
-    let isAllowed = false;
-    if (!checkUnlock.empty) {
-        const unlockData = checkUnlock.docs[0].data();
-        
-        // Đổi Firebase Timestamp hoặc chuỗi cũ sang đối tượng Date an toàn
-        const lastSubmitDate = lastExam.submittedAt?.toDate ? lastExam.submittedAt.toDate() : new Date(lastExam.submittedAt);
-        const unlockDate = unlockData.unlockedAt?.toDate ? unlockData.unlockedAt.toDate() : new Date(unlockData.unlockedAt);
-        
-        if (unlockDate > lastSubmitDate) {
-            isAllowed = true; 
-        }
-    }
+            if (!checkExam.empty) {
+                const lastExam = checkExam.docs[0].data();
+                
+                // Quét xem có lệnh "mở khóa thi lại" mới hơn lần nộp bài này không
+                const checkUnlock = await db.collection('allow_retest')
+                                            .where('employeeId', '==', empIdInput)
+                                            .orderBy('unlockedAt', 'desc')
+                                            .limit(1)
+                                            .get();
+                
+                let isAllowed = false;
+                if (!checkUnlock.empty) {
+                    const unlockData = checkUnlock.docs[0].data();
+                    const lastSubmitDate = parseDateString(lastExam.submittedAt);
+                    const unlockDate = parseDateString(unlockData.unlockedAt);
+                    
+                    if (unlockDate > lastSubmitDate) {
+                        isAllowed = true; // Cho phép làm lượt mới
+                    }
+                }
 
-    if (!isAllowed) {
-        loginError.innerHTML = `⚠️ Từ chối: Bạn đã hoàn thành bài thi này. Hãy liên hệ Admin để mở khóa thi lại!<br><span class='sub-lang-dark text-danger'>⚠️ 拒否されました: この試験は既に完了しています。再試験が必要な場合は、管理者にロック解除を依頼してください。</span>`;
-        loginError.style.display = 'block';
-        resetEmployeeBtn();
-        return;
-    }
-}
+                if (!isAllowed) {
+                    loginError.innerHTML = `⚠️ Từ chối: Bạn đã hoàn thành bài thi này. Hãy liên hệ Admin để mở khóa thi lại!<br><span class='sub-lang-dark text-danger'>⚠️ 拒否されました: この試験は既に完了しています。再試験が必要な場合は、管理者にロック解除を依頼してください。</span>`;
+                    loginError.style.display = 'block';
+                    resetEmployeeBtn();
+                    return;
+                }
+            }
 
-            // 4. Khởi tạo phiên thi mới hoàn toàn
+            // 4. Khởi tạo phiên thi mới hoàn toàn (Lưu chuẩn Date object)
             await db.collection('active_sessions').doc(empIdInput).set({
                 employeeId: currentEmployee.id,
                 employeeName: currentEmployee.name || "N/A",
@@ -626,12 +566,57 @@
         await loadQuestions();
     }
 
+    // HÀM PARSE DATE THÔNG MINH - ĐA DẠNG ĐỊNH DẠNG (STRING / TIMESTAMP / DATE)
     function parseDateString(str) {
         if (!str) return new Date(0);
-        const parts = str.split(', ');
-        const dateParts = parts[0].split('/');
-        const timeParts = parts[1] ? parts[1].split(':') : [0,0,0];
-        return new Date(dateParts[2], dateParts[1] - 1, dateParts[0], timeParts[0], timeParts[1], timeParts[2]);
+        
+        // 1. Nếu đã là một đối tượng Date thuần
+        if (str instanceof Date) return str;
+        
+        // 2. Nếu là Firestore Timestamp có phương thức toDate()
+        if (typeof str === 'object' && typeof str.toDate === 'function') {
+            return str.toDate();
+        }
+        
+        // 3. Nếu là Firestore raw object dạng {seconds: x, nanoseconds: y}
+        if (typeof str === 'object' && str.seconds !== undefined) {
+            return new Date(str.seconds * 1000);
+        }
+        
+        // 4. Nếu là String (Bao gồm dữ liệu cũ chuỗi vi-VN hoặc chuỗi chuẩn ISO)
+        if (typeof str === 'string') {
+            try {
+                // Thử phân tích chuỗi định dạng chuẩn ISO/UTC
+                const parsed = Date.parse(str);
+                if (!isNaN(parsed)) return new Date(parsed);
+
+                // Thử phân tích chuỗi định dạng vi-VN cũ: "14:30:15, 15/07/2026" hoặc "15/07/2026, 14:30:15"
+                const parts = str.split(', ');
+                if (parts.length >= 2) {
+                    let dateStr = parts[0].includes('/') ? parts[0] : parts[1];
+                    let timeStr = parts[0].includes('/') ? parts[1] : parts[0];
+                    const dateParts = dateStr.split('/');
+                    const timeParts = timeStr.split(':');
+                    return new Date(
+                        parseInt(dateParts[2]), 
+                        parseInt(dateParts[1]) - 1, 
+                        parseInt(dateParts[0]), 
+                        parseInt(timeParts[0] || 0), 
+                        parseInt(timeParts[1] || 0), 
+                        parseInt(timeParts[2] || 0)
+                    );
+                } else if (str.includes('/')) {
+                    const dateParts = str.split('/');
+                    return new Date(parseInt(dateParts[2]), parseInt(dateParts[1]) - 1, parseInt(dateParts[0]));
+                }
+            } catch (e) {
+                console.error("Lỗi khi giải mã chuỗi thời gian:", str, e);
+                return new Date(0);
+            }
+        }
+        
+        // Trả về mặc định
+        return new Date(str || 0);
     }
 
     // ========================================================
@@ -830,7 +815,7 @@
             score: score,
             totalQuestions: totalQs,
             isPassed: isPassed,
-            submittedAt: new Date(),
+            submittedAt: new Date(), // Sử dụng Date object chuẩn
             wrongAnswersList: wrongAnswersList // Lưu mảng chi tiết câu sai lên Cloud
         };
 
@@ -845,7 +830,7 @@
             document.getElementById('scoreDisplay').innerText = `${score}/${totalQs}`;
             document.getElementById('resEmpId').innerText = examResultData.employeeId;
             document.getElementById('resEmpName').innerText = examResultData.employeeName;
-            document.getElementById('resTime').innerText = examResultData.submittedAt;
+            document.getElementById('resTime').innerText = examResultData.submittedAt.toLocaleString('vi-VN');
 
             const resultIcon = document.getElementById('resultIcon');
             const resultStatus = document.getElementById('resultStatus');
@@ -973,6 +958,9 @@
             allResultsData.forEach((data, index) => {
                 const badge = data.isPassed ? `<span class="badge bg-success">ĐẠT (合格)</span>` : `<span class="badge bg-danger">CHƯA ĐẠT (不合格)</span>`;
                 
+                // Giải mã thời gian nộp bài an toàn để hiển thị trên bảng quản lý
+                const formattedSubmitTime = parseDateString(data.submittedAt).toLocaleString('vi-VN');
+                
                 // KIỂM TRA TRẠNG THÁI NÚT MỞ KHÓA:
                 // Nếu ID nhân viên nằm trong danh sách activeUnlocksList -> Đang trong trạng thái "Đã mở khóa (Chờ thi lại)"
                 const isCurrentlyUnlocked = activeUnlocksList.includes(data.employeeId);
@@ -1004,7 +992,7 @@
                         </td>
                         <td class="fw-bold text-primary">${data.score}/${data.totalQuestions || 30}</td>
                         <td>${badge}</td>
-                        <td class="small text-muted">${data.submittedAt}</td>
+                        <td class="small text-muted">${formattedSubmitTime}</td>
                         <td>${btnHtml}</td>
                     </tr>
                 `;
@@ -1122,9 +1110,7 @@
         if (!confirm(confirmMsg)) return;
 
         try {
-            const nowStr = new Date().toLocaleString('vi-VN');
-            
-            // 1. Ghi bản ghi mở khóa lên 'allow_retest'
+            // 1. Ghi bản ghi mở khóa lên 'allow_retest' dưới dạng Date object chuẩn
             await db.collection('allow_retest').add({
                 employeeId: empId,
                 unlockedAt: new Date(),
@@ -1152,14 +1138,19 @@
             return;
         }
 
-        const excelData = allResultsData.map(item => ({
-            "MÃ SỐ NHÂN VIÊN (従業員ID)": item.employeeId,
-            "HỌ VÀ TÊN (氏名)": item.employeeName,
-            "ĐIỂM SỐ (得点)": `${item.score}/${item.totalQuestions || 30}`,
-            "SỐ CÂU ĐÚNG (正解数)": item.score,
-            "TRẠNG THÁI (結果)": item.isPassed ? "ĐẠT (PASSED)" : "CHƯA ĐẠT (FAILED)",
-            "THỜI GIAN NỘP BÀI (提出時間)": item.submittedAt
-        }));
+        const excelData = allResultsData.map(item => {
+            // Định dạng thời gian an toàn trước khi kết xuất Excel
+            const formattedDate = parseDateString(item.submittedAt).toLocaleString('vi-VN');
+            
+            return {
+                "MÃ SỐ NHÂN VIÊN (従業員ID)": item.employeeId,
+                "HỌ VÀ TÊN (氏名)": item.employeeName,
+                "ĐIỂM SỐ (得点)": `${item.score}/${item.totalQuestions || 30}`,
+                "SỐ CÂU ĐÚNG (正解数)": item.score,
+                "TRẠNG THÁI (結果)": item.isPassed ? "ĐẠT (PASSED)" : "CHƯA ĐẠT (FAILED)",
+                "THỜI GIAN NỘP BÀI (提出時間)": formattedDate
+            };
+        });
 
         const ws = XLSX.utils.json_to_sheet(excelData);
         const wb = XLSX.utils.book_new();
